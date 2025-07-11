@@ -78,6 +78,7 @@ export function RiskResults({ data }: RiskResultsProps) {
 
     const updatedAssessment = await rateRisk({
       ...currentAssessment,
+      deficiencies: currentAssessment.controlDeficiencies,
       controls: updatedControls,
     });
 
