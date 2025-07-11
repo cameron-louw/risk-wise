@@ -15,6 +15,7 @@ import { ClarifyingQuestions } from './clarifying-questions';
 import { generateRiskDescription } from '@/ai/flows/generate-risk-description';
 import { generateRiskStatement } from '@/ai/flows/generate-risk-statement';
 import { generateSuggestedControls } from '@/ai/flows/generate-suggested-controls';
+import { generateClarifyingQuestions } from '@/ai/flows/generate-clarifying-questions';
 import { CiaImpactChart } from './cia-impact-chart';
 
 interface RiskResultsProps {
@@ -140,7 +141,7 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
       const { riskStatement } = await generateRiskStatement({ technology, controlDeficiencies: enrichedDeficiencies });
       const { riskDescription } = await generateRiskDescription({ technology, riskStatement, controlDeficiencies: enrichedDeficiencies });
       
-      const [rateResult, controlsResult] = await Promise.all([
+      const [rateResult, controlsResult, questionsResult] = await Promise.all([
         rateRisk({
           technology,
           deficiencies: enrichedDeficiencies,
@@ -153,6 +154,10 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             riskStatement,
             riskDescription,
             controlDeficiencies: enrichedDeficiencies,
+        }),
+        generateClarifyingQuestions({
+            technology,
+            controlDeficiencies: enrichedDeficiencies
         })
       ]);
 
@@ -163,7 +168,9 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
         likelihood: rateResult.likelihood, 
         impact: rateResult.impact,
         ciaImpact: rateResult.ciaImpact,
-        suggestedControls: controlsResult.suggestedControls
+        suggestedControls: controlsResult.suggestedControls,
+        clarifyingQuestions: questionsResult.questions,
+        questionAnswers: new Array(questionsResult.questions.length).fill('')
       });
     } catch (e) {
       console.error(e);
