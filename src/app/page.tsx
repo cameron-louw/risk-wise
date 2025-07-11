@@ -10,6 +10,7 @@ import { RiskResults } from '@/components/risk-results';
 import { type RiskAssessment } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { Loader } from '@/components/loader';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +54,10 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-background p-4 sm:p-8">
+    <div className="relative flex flex-col items-center min-h-screen bg-background p-4 sm:p-8">
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-4xl mx-auto">
         <header className="flex items-center justify-center mb-8 text-center">
           <ShieldCheck className="w-8 h-8 md:w-10 md:h-10 text-primary mr-3" />
