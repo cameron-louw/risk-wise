@@ -38,6 +38,7 @@ export default function Home() {
         riskDescription,
         likelihood,
         impact,
+        controls: [],
       });
     } catch (e) {
       console.error(e);

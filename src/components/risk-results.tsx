@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { RiskAssessment } from '@/types';
-import { Download, FileWarning, ShieldAlert, ClipboardList, Info } from 'lucide-react';
-
+import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useToast } from "@/hooks/use-toast";
 import { rateRisk } from '@/ai/flows/rate-risk';
+
 interface RiskResultsProps {
   data: RiskAssessment;
 }
@@ -21,13 +23,21 @@ const ratingValueMap: { [key: string]: number } = {
 };
 
 export function RiskResults({ data }: RiskResultsProps) {
+  const { toast } = useToast();
   const [currentAssessment, setCurrentAssessment] = useState<RiskAssessment>(data);
   const [newControl, setNewControl] = useState('');
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  
+  // Separate state for staged controls
+  const [stagedControls, setStagedControls] = useState<string[]>(data.controls || []);
 
   const handleExport = () => {
     const { technology, controlDeficiencies, riskStatement, riskDescription, likelihood, impact } = currentAssessment;
     
-    const escapeCsvField = (field: string) => `"${String(field || '').replace(/"/g, '""')}"`;
+    const escapeCsvField = (field: string | object) => {
+      const stringified = typeof field === 'object' ? JSON.stringify(field) : String(field || '');
+      return `"${stringified.replace(/"/g, '""')}"`;
+    }
     
     const headers = ["Technology", "Control Deficiencies", "Risk Statement", "Risk Description", "Likelihood", "Impact"].join(",");
     
@@ -36,8 +46,8 @@ export function RiskResults({ data }: RiskResultsProps) {
       escapeCsvField(controlDeficiencies),
       escapeCsvField(riskStatement),
       escapeCsvField(riskDescription),
-      escapeCsvField(likelihood),
-      escapeCsvField(impact)
+      escapeCsvField(likelihood.rating),
+      escapeCsvField(impact.rating)
     ].join(",");
 
     const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + row;
@@ -52,52 +62,62 @@ export function RiskResults({ data }: RiskResultsProps) {
   };
 
   const getBadgeVariant = (level: string): 'destructive' | 'secondary' | 'outline' => {
-    const lowerLevel = level.toLowerCase();
-    if (lowerLevel.startsWith('very high') || lowerLevel.startsWith('high')) return 'destructive';
-    if (lowerLevel.startsWith('medium')) return 'secondary';
-    if (lowerLevel.startsWith('low') || lowerLevel.startsWith('very low')) return 'outline';
-    return 'outline'; // Default case
-  };
-  const getCellColor = (rating: number): string => {
-    if (rating >= 16) return 'bg-red-500/50'; // Very High Risk
-    if (rating >= 10) return 'bg-red-400/50'; // High Risk
-    if (rating >= 6) return 'bg-orange-300/50'; // Medium-High Risk
-    if (rating >= 3) return 'bg-yellow-300/50'; // Medium Risk
+    const lowerLevel = (level || '').toLowerCase();
+    if (lowerLevel.includes('high')) return 'destructive';
+    if (lowerLevel.includes('medium')) return 'secondary';
+    if (lowerLevel.includes('low')) return 'outline';
     return 'outline';
   };
-  const getTotalRatingBadgeVariant = (rating: number): 'destructive' | 'secondary' | 'outline' => {
-    if (rating >= 15) return 'destructive'; // High
-    if (rating >= 5) return 'secondary'; // Medium
-    return 'outline'; // Low
+  
+  const getCellColor = (rating: number): string => {
+    if (rating >= 16) return 'bg-red-500/50';
+    if (rating >= 10) return 'bg-red-400/50';
+    if (rating >= 6) return 'bg-orange-300/50';
+    if (rating >= 3) return 'bg-yellow-300/50';
+    return 'outline';
   };
 
-  const handleAddControl = async () => {
+  const getTotalRatingBadgeVariant = (rating: number): 'destructive' | 'secondary' | 'outline' => {
+    if (rating >= 15) return 'destructive';
+    if (rating >= 5) return 'secondary';
+    return 'outline';
+  };
+  
+  const handleAddControl = () => {
     if (newControl.trim() === '') return;
-
-    const updatedControls = currentAssessment.controls ? [...currentAssessment.controls, newControl.trim()] : [newControl.trim()];
-
-    const updatedAssessment = await rateRisk({
-      ...currentAssessment,
-      deficiencies: currentAssessment.controlDeficiencies,
-      controls: updatedControls,
-    });
-
-    setCurrentAssessment({ ...currentAssessment, ...updatedAssessment, controls: updatedControls });
+    setStagedControls([...stagedControls, newControl.trim()]);
     setNewControl('');
   };
 
-  const parseRating = (text: string) => {
-    if (!text) return { rating: 'N/A', justification: 'Rating or justification not available. Provide more details or add controls for better assessment.' };
-    const parts = text.split(/ - |: /);
-    const rating = parts[0] || 'N/A';
-    const justification = parts.length > 1 ? parts.slice(1).join(' - ') : 'No justification provided.';
-    return { rating, justification };
+  const handleRemoveControl = (index: number) => {
+    setStagedControls(stagedControls.filter((_, i) => i !== index));
+  };
+  
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    try {
+      const result = await rateRisk({
+        technology: currentAssessment.technology,
+        deficiencies: currentAssessment.controlDeficiencies,
+        riskStatement: currentAssessment.riskStatement,
+        riskDescription: currentAssessment.riskDescription,
+        controls: stagedControls,
+      });
+      setCurrentAssessment({ ...currentAssessment, ...result, controls: stagedControls });
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: "destructive",
+        title: "An error occurred",
+        description: "Failed to recalculate risk. Please try again.",
+      });
+    } finally {
+      setIsRecalculating(false);
+    }
   };
 
-  const { rating: likelihoodRating, justification: likelihoodJustification } = parseRating(data.likelihood);
-  const { rating: impactRating, justification: impactJustification } = parseRating(currentAssessment.impact);
-  const totalRating = (ratingValueMap[likelihoodRating] || 0) * (ratingValueMap[impactRating] || 0) ;
-
+  const { likelihood, impact } = currentAssessment;
+  const totalRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
@@ -120,6 +140,7 @@ export function RiskResults({ data }: RiskResultsProps) {
           <p className="text-lg font-medium">{currentAssessment.riskStatement}</p>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
@@ -132,7 +153,6 @@ export function RiskResults({ data }: RiskResultsProps) {
         </CardContent>
       </Card>
 
-
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -142,11 +162,11 @@ export function RiskResults({ data }: RiskResultsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Badge variant={getBadgeVariant(likelihoodRating)} className="text-base px-4 py-1 rounded-md">
-              {likelihoodRating}
+            <Badge variant={getBadgeVariant(likelihood.rating)} className="text-base px-4 py-1 rounded-md">
+              {likelihood.rating}
             </Badge>
             <Separator orient="horizontal" />
-            <p className="text-muted-foreground">{likelihoodJustification}</p>
+            <p className="text-muted-foreground">{likelihood.justification}</p>
           </CardContent>
         </Card>
 
@@ -158,15 +178,15 @@ export function RiskResults({ data }: RiskResultsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Badge variant={getBadgeVariant(impactRating)} className="text-base px-4 py-1 rounded-md">
-              {impactRating}
+            <Badge variant={getBadgeVariant(impact.rating)} className="text-base px-4 py-1 rounded-md">
+              {impact.rating}
             </Badge>
             <Separator orient="horizontal" />
-            <p className="text-muted-foreground">{impactJustification}</p>
+            <p className="text-muted-foreground">{impact.justification}</p>
           </CardContent>
         </Card>
       </div>
-
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
@@ -176,32 +196,25 @@ export function RiskResults({ data }: RiskResultsProps) {
           <CardDescription>Understanding your risk level based on likelihood and impact.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Risk Matrix */}
           <div className="flex flex-col items-center justify-center w-full">
-            {/* Impact Header (Top) */}
             <div className="grid grid-cols-6 w-full text-center font-bold border-l border-t">
-              {/* Corner empty cell */}
               <div className="p-2 border-r border-b flex items-center justify-center"></div>
-              {/* Impact Levels (Left to Right) */}
-              {impactLevels.reverse().map((impactLevel, i) => (
+              {impactLevels.slice().reverse().map((impactLevel) => (
                 <div key={impactLevel} className="p-2 border-r border-b flex items-center justify-center">{impactLevel}</div>
               ))}
             </div>
-            {/* Likelihood Levels (Left side, Top to Bottom) and Matrix Cells */}
-            {likelihoodLevels.reverse().map((likelihoodLevel, lIndex) => (
-              <div key={likelihoodLevel} className="grid grid-cols-6 w-full text-center border-l border-b"> {/* Added border-b here */}
-                {/* Likelihood Label (Leftmost column in each row) */}
+            {likelihoodLevels.slice().reverse().map((likelihoodLevel) => (
+              <div key={likelihoodLevel} className="grid grid-cols-6 w-full text-center border-l border-b">
                 <div className="p-2 border-r flex items-center justify-center font-bold">
- {likelihoodLevel} ({ratingValueMap[likelihoodLevel]})
+                  {likelihoodLevel}
                 </div>
-                {/* Matrix Cells for this Likelihood level */}
-                {impactLevels.map((impactLevel, iIndex) => {
-                  const cellRating = (ratingValueMap[likelihoodLevel] || 0) * (ratingValueMap[impactLevel] || 0); // Calculate cellRating within the correct scope
-                  const isHighlighted = likelihoodLevel === likelihoodRating && impactLevel === impactRating; // Check if this cell should be highlighted
+                {impactLevels.map((impactLevel) => {
+                  const cellRating = (ratingValueMap[likelihoodLevel] || 0) * (ratingValueMap[impactLevel] || 0);
+                  const isHighlighted = likelihoodLevel === likelihood.rating && impactLevel === impact.rating;
                   return (
                     <div
-                      key={`${likelihoodLevel}-${impactLevel}`} // Unique key for each cell
-                      className={`p-4 border-r border-b flex items-center justify-center text-sm ${getCellColor(cellRating)} ${isHighlighted ? 'ring-4 ring-blue-500 z-10' : ''}`} // Apply cell color and highlight class
+                      key={`${likelihoodLevel}-${impactLevel}`}
+                      className={`p-4 border-r border-b flex items-center justify-center text-sm ${getCellColor(cellRating)} ${isHighlighted ? 'ring-4 ring-blue-500 z-10' : ''}`}
                     >
                       {cellRating || '-'}
                     </div>
@@ -229,30 +242,46 @@ export function RiskResults({ data }: RiskResultsProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <Info className="h-6 w-6 text-accent" />
-            <span>Implemented Controls</span>
+            <span>Add Mitigating Controls</span>
           </CardTitle>
-          <CardDescription>Add controls to see how they impact the risk assessment.</CardDescription>
+          <CardDescription>Add controls to see how they impact the risk assessment, then click recalculate.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {currentAssessment.controls && currentAssessment.controls.length > 0 ? (
-            <ul className="list-disc list-inside space-y-1">
-              {currentAssessment.controls.map((control, index) => (
-                <li key={index}>{control}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground">No controls have been added yet.</p>
-          )}
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={newControl}
               onChange={(e) => setNewControl(e.target.value)}
-              placeholder="Add a control (e.g., Backups, Encryption)"
-              className="flex-grow px-3 py-2 border rounded-md text-sm"
+              placeholder="e.g., Implement MFA, Encrypt data at rest"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddControl()}
             />
-            <Button onClick={handleAddControl}>Add Control</Button>
+            <Button onClick={handleAddControl} variant="outline" size="icon">
+              <PlusCircle className="h-4 w-4" />
+            </Button>
           </div>
+          {stagedControls && stagedControls.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Controls to be applied:</p>
+              <ul className="space-y-2">
+                {stagedControls.map((control, index) => (
+                  <li key={index} className="flex items-center justify-between bg-secondary p-2 rounded-md">
+                    <span>{control}</span>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveControl(index)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+               <div className="flex justify-end pt-2">
+                 <Button onClick={handleRecalculate} disabled={isRecalculating}>
+                   <Sparkles className="mr-2 h-4 w-4" />
+                   {isRecalculating ? 'Recalculating...' : 'Recalculate Risk with Controls'}
+                 </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
+          )}
         </CardContent>
       </Card>
     </div>
