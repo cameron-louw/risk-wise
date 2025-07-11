@@ -26,7 +26,7 @@ interface RiskResultsProps {
 }
 
 const ratingValueMap: { [key: string]: number } = {
-  'Very Low': 1, 'Low': 2, 'Medium': 3, 'High': 4, 'Very High': 5,
+  'Insignificant': 1, 'Low': 2, 'Medium': 3, 'High': 4, 'Severe': 5,
 };
 
 export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSavedView = false }: RiskResultsProps) {
@@ -94,7 +94,7 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
 
   const getBadgeVariant = (level: string): 'destructive' | 'secondary' | 'outline' => {
     const lowerLevel = (level || '').toLowerCase();
-    if (lowerLevel.includes('very high') || lowerLevel.includes('high') || lowerLevel.includes('critical')) return 'destructive';
+    if (lowerLevel.includes('severe') || lowerLevel.includes('high') || lowerLevel.includes('critical')) return 'destructive';
     if (lowerLevel.includes('medium')) return 'secondary';
     return 'outline';
   };
@@ -203,6 +203,7 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
   
   const residualRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
   const inherentRating = initialLikelihood && initialImpact ? (ratingValueMap[initialLikelihood.rating] || 0) * (ratingValueMap[initialImpact.rating] || 0) : residualRating;
+  const showInherentRisk = initialLikelihood && initialImpact && (initialLikelihood.rating !== likelihood.rating || initialImpact.rating !== impact.rating);
   
   const hasControls = controls && controls.length > 0;
   const hasSuggestedControls = suggestedControls && suggestedControls.length > 0;
@@ -210,6 +211,9 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
   
   const hasAnswers = (questionAnswers || []).some(a => !!a?.trim());
   const recalculateText = hasControls || hasAnswers ? 'Recalculate with new information' : 'Recalculate Assessment';
+  
+  const riskLevels = ['Insignificant', 'Low', 'Medium', 'High', 'Severe'];
+  const riskLevelsReversed = [...riskLevels].reverse();
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
@@ -295,7 +299,8 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
           </CardTitle>
           <CardDescription>
             Comparing inherent risk (before controls) to residual risk (after controls). 
-            <span className="inline-block w-3 h-3 bg-primary/50 rounded-full mx-1.5"></span> Inherent, 
+            {showInherentRisk && <span className="inline-block w-3 h-3 bg-muted-foreground/50 rounded-full mx-1.5"></span>}
+            {showInherentRisk && "Inherent, "}
             <span className="inline-block w-3 h-3 bg-primary rounded-full mx-1.5"></span> Residual
           </CardDescription>
         </CardHeader>
@@ -303,28 +308,28 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
           <div className="flex flex-col items-center justify-center w-full">
             <div className="grid grid-cols-6 w-full text-center font-bold border-l border-t">
               <div className="p-2 border-r border-b flex items-center justify-center -rotate-90">Likelihood</div>
-              {['Very Low', 'Low', 'Medium', 'High', 'Very High'].map((impactLevel) => (
-                <div key={impactLevel} className="p-2 border-r border-b flex items-center justify-center">{impactLevel}</div>
+              {riskLevels.map((impactLevel) => (
+                <div key={impactLevel} className="p-2 border-r border-b flex items-center justify-center text-xs sm:text-sm">{impactLevel}</div>
               ))}
             </div>
-            {['Very High', 'High', 'Medium', 'Low', 'Very Low'].map((likelihoodLevel) => (
+            {riskLevelsReversed.map((likelihoodLevel) => (
               <div key={likelihoodLevel} className="grid grid-cols-6 w-full text-center border-l border-b">
-                <div className="p-2 border-r flex items-center justify-center font-bold">
+                <div className="p-2 border-r flex items-center justify-center font-bold text-xs sm:text-sm">
                   {likelihoodLevel}
                 </div>
-                {['Very Low', 'Low', 'Medium', 'High', 'Very High'].map((impactLevel) => {
+                {riskLevels.map((impactLevel) => {
                   const cellRating = (ratingValueMap[likelihoodLevel] || 0) * (ratingValueMap[impactLevel] || 0);
                   const isResidual = likelihoodLevel === likelihood.rating && impactLevel === impact.rating;
-                  const isInherent = initialLikelihood && initialImpact && likelihoodLevel === initialLikelihood.rating && impactLevel === initialImpact.rating;
+                  const isInherent = showInherentRisk && initialLikelihood && initialImpact && likelihoodLevel === initialLikelihood.rating && impactLevel === initialImpact.rating;
                   
                   return (
                     <div
                       key={`${likelihoodLevel}-${impactLevel}`}
-                      className={`relative p-4 border-r border-b flex items-center justify-center text-sm font-bold ${getCellColor(cellRating)}`}
+                      className={`relative p-4 border-r flex items-center justify-center text-sm font-bold ${getCellColor(cellRating)}`}
                     >
                       {cellRating || '-'}
                       {isInherent && (
-                          <div className="absolute inset-1 ring-2 ring-primary/50 rounded-full" title={`Inherent Risk (${initialLikelihood?.rating} / ${initialImpact?.rating})`}></div>
+                          <div className="absolute inset-1 ring-2 ring-muted-foreground/50 rounded-full" title={`Inherent Risk (${initialLikelihood?.rating} / ${initialImpact?.rating})`}></div>
                       )}
                       {isResidual && (
                           <div className="absolute inset-1 ring-2 ring-primary rounded-full" title={`Residual Risk (${likelihood.rating} / ${impact.rating})`}></div>
@@ -340,12 +345,14 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
           <Separator />
 
           <div className="flex items-center justify-center gap-6">
-            <div className="flex items-center gap-2 text-center flex-col">
-              <span className="text-lg font-semibold">Inherent Risk</span>
-              <Badge variant={getTotalRatingBadgeVariant(inherentRating)} className="text-lg px-4 py-1 rounded-md">
-                {inherentRating}
-              </Badge>
-            </div>
+             {showInherentRisk && (
+              <div className="flex items-center gap-2 text-center flex-col">
+                <span className="text-lg font-semibold">Inherent Risk</span>
+                <Badge variant={getTotalRatingBadgeVariant(inherentRating)} className="text-lg px-4 py-1 rounded-md">
+                  {inherentRating}
+                </Badge>
+              </div>
+             )}
             <div className="flex items-center gap-2 text-center flex-col">
               <span className="text-lg font-semibold">Residual Risk</span>
               <Badge variant={getTotalRatingBadgeVariant(residualRating)} className="text-lg px-4 py-1 rounded-md">
@@ -371,7 +378,7 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
             <CardContent className="space-y-6">
                 <CiaImpactChart 
                   residual={ciaImpact}
-                  inherent={initialCiaImpact}
+                  inherent={showInherentRisk ? initialCiaImpact : undefined}
                 />
                 <div className="grid md:grid-cols-3 gap-6 pt-4">
                     <div className="space-y-2">

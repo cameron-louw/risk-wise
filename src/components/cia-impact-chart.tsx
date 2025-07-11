@@ -68,8 +68,8 @@ export function CiaImpactChart({ residual, inherent }: CiaImpactChartProps) {
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{fill: 'hsl(var(--muted))'}} />
                 <Legend />
-                {inherent && <Bar dataKey="inherent" fill="hsl(var(--chart-1))" opacity={0.5} radius={[4, 4, 0, 0]} />}
-                <Bar dataKey="residual" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                {inherent && <Bar dataKey="inherent" name="Inherent" fill="hsl(var(--muted-foreground))" opacity={0.5} radius={[4, 4, 0, 0]} />}
+                <Bar dataKey="residual" name="Residual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
         </ResponsiveContainer>
     </div>

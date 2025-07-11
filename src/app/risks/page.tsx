@@ -12,7 +12,7 @@ import { PlusCircle, Trash2, ListChecks, ShieldCheck, Eye } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const ratingValueMap: { [key: string]: number } = {
-    'Very Low': 1, 'Low': 2, 'Medium': 3, 'High': 4, 'Very High': 5,
+    'Insignificant': 1, 'Low': 2, 'Medium': 3, 'High': 4, 'Severe': 5,
 };
 
 export default function RiskListPage() {

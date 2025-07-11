@@ -20,7 +20,7 @@ const RateRiskInputSchema = z.object({
 });
 export type RateRiskInput = z.infer<typeof RateRiskInputSchema>;
 
-const ratingScale = z.enum(['Very Low', 'Low', 'Medium', 'High', 'Very High']);
+const ratingScale = z.enum(['Insignificant', 'Low', 'Medium', 'High', 'Severe']);
 const ciaRatingScale = z.enum(['Low', 'Medium', 'High', 'Critical']);
 
 const CiaImpactSchema = z.object({
@@ -30,11 +30,11 @@ const CiaImpactSchema = z.object({
 
 const RateRiskOutputSchema = z.object({
   likelihood: z.object({
-    rating: ratingScale.describe('The likelihood of the risk occurring (Very Low, Low, Medium, High, Very High).'),
+    rating: ratingScale.describe('The likelihood of the risk occurring (Insignificant, Low, Medium, High, Severe).'),
     justification: z.string().describe('A detailed justification for the likelihood rating based on the FAIR framework.'),
   }),
   impact: z.object({
-    rating: ratingScale.describe('The impact if the risk occurs (Very Low, Low, Medium, High, Very High).'),
+    rating: ratingScale.describe('The impact if the risk occurs (Insignificant, Low, Medium, High, Severe).'),
     justification: z.string().describe('A detailed justification for the impact rating based on the FAIR framework.'),
   }),
   ciaImpact: z.object({
@@ -73,14 +73,14 @@ const rateRiskPrompt = ai.definePrompt({
 1.  **Analyze Likelihood:**
     -   Based on the deficiencies and any additional context, determine the Threat Event Frequency (how often a threat agent will act) and Vulnerability (how easily the technology can be compromised).
     -   If mitigating controls are present, evaluate how they reduce Threat Event Frequency or Vulnerability.
-    -   Provide a **Likelihood Rating** on a scale of **Very Low, Low, Medium, High, Very High**.
-    -   Provide a detailed **Justification** for your likelihood rating, explaining your reasoning based on FAIR principles (Threat Event Frequency, Vulnerability) and the effect of any controls.
+    -   Provide a **Likelihood Rating** on a scale of **Insignificant, Low, Medium, High, Severe**.
+    -   Provide a detailed **Justification** for your likelihood rating, explaining your reasoning based on FAIR principles (Threat Event Frequency, Vulnerulnerability) and the effect of any controls.
 
 2.  **Analyze Impact:**
     -   Based on the risk description, estimate the potential magnitude of loss (e.g., financial, reputational, legal).
     -   Consider the different forms of loss (Productivity, Response, Replacement, Fines and Judgements, Competitive Advantage, Reputation).
     -   If mitigating controls are present, evaluate how they reduce the magnitude of loss.
-    -   Provide an **Impact Rating** on a scale of **Very Low, Low, Medium, High, Very High**.
+    -   Provide an **Impact Rating** on a scale of **Insignificant, Low, Medium, High, Severe**.
     -   Provide a detailed **Justification** for your impact rating, explaining your reasoning based on FAIR principles (Magnitude of Loss) and the effect of any controls.
 
 3.  **Analyze CIA Triad Impact:**
