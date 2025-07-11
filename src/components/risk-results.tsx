@@ -404,14 +404,14 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
         </Card>
       )}
 
-      <Accordion type="multiple" className="w-full space-y-6">
+      <Accordion type="multiple" className="w-full space-y-6" defaultValue={["refine-and-recalculate"]}>
         <Card>
-            <AccordionItem value="refine" className="border-0">
+            <AccordionItem value="refine-and-recalculate" className="border-0">
                 <CardHeader className="pb-2">
                     <AccordionTrigger className="p-0 hover:no-underline">
                         <CardTitle className="flex items-center gap-3">
                             <Sparkles className="h-6 w-6 text-accent" />
-                            <span>Refine & Recalculate</span>
+                            <span>Refine &amp; Recalculate</span>
                         </CardTitle>
                     </AccordionTrigger>
                     <CardDescription>Add mitigating controls or answer clarifying questions to refine the assessment, then click recalculate.</CardDescription>
@@ -452,13 +452,6 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
                             ) : (
                             <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
                             )}
-                        </div>
-                        
-                        <div className="flex justify-end pt-4">
-                            <Button onClick={handleRecalculate} disabled={isRecalculating}>
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                {isRecalculating ? 'Recalculating...' : recalculateText}
-                            </Button>
                         </div>
                     </CardContent>
                 </AccordionContent>
@@ -505,7 +498,7 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
                         <AccordionTrigger className="p-0 hover:no-underline">
                              <CardTitle className="flex items-center gap-3">
                                 <MessageCircleQuestion className="h-6 w-6 text-primary" />
-                                <span>Refine with Q&A</span>
+                                <span>Refine with Q&amp;A</span>
                             </CardTitle>
                         </AccordionTrigger>
                          <CardDescription>Answer these clarifying questions to provide more context and improve the accuracy of the risk assessment when you recalculate.</CardDescription>
@@ -530,6 +523,12 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
         )}
       </Accordion>
 
+      <div className="flex justify-end pt-2">
+        <Button onClick={handleRecalculate} disabled={isRecalculating}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            {isRecalculating ? 'Recalculating...' : recalculateText}
+        </Button>
+      </div>
 
       <div className="flex justify-end pt-2">
         <Button onClick={handleSaveRisk} size="lg">
