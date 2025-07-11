@@ -49,7 +49,9 @@ const prompt = ai.definePrompt({
 Technology: {{{technology}}}
 Control Deficiencies: {{{controlDeficiencies}}}
 
-Consider whether the risk has one or multiple control deficiencies using the hasMultipleDeficiencies tool before completing the risk statement.
+Identify the threat actor (internal or external), the risk event (what went wrong), and the repercussion (e.g., reputational harm, penalties) based on the provided technology and control deficiencies.
+
+Consider whether the risk has one or multiple control deficiencies using the hasMultipleDeficiencies tool.
 
 Risk Statement: `,
 });
