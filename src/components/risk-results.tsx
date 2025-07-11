@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { RiskAssessment } from '@/types';
-import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb } from 'lucide-react';
+import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { rateRisk } from '@/ai/flows/rate-risk';
 
 interface RiskResultsProps {
   data: RiskAssessment;
+  onStartOver: () => void;
 }
 
 const likelihoodLevels = ['Very Low', 'Low', 'Medium', 'High', 'Very High'];
@@ -22,7 +23,7 @@ const ratingValueMap: { [key: string]: number } = {
   'Very Low': 1, 'Low': 2, 'Medium': 3, 'High': 4, 'Very High': 5,
 };
 
-export function RiskResults({ data }: RiskResultsProps) {
+export function RiskResults({ data, onStartOver }: RiskResultsProps) {
   const { toast } = useToast();
   const [currentAssessment, setCurrentAssessment] = useState<RiskAssessment>(data);
   const [newControl, setNewControl] = useState('');
@@ -133,10 +134,16 @@ export function RiskResults({ data }: RiskResultsProps) {
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       <div className="flex flex-wrap gap-4 justify-between items-center">
         <h2 className="text-2xl font-semibold">Assessment Results</h2>
-        <Button onClick={handleExport} variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export to CSV
-        </Button>
+        <div className="flex gap-2">
+            <Button onClick={onStartOver} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Start New Assessment
+            </Button>
+            <Button onClick={handleExport} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Export to CSV
+            </Button>
+        </div>
       </div>
       
       <Card>

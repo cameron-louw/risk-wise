@@ -33,10 +33,10 @@ export function RiskForm({ onSubmit, isLoading }: RiskFormProps) {
   });
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg animate-in fade-in-50 duration-500">
       <CardHeader>
         <CardTitle>New Risk Assessment</CardTitle>
-        <CardDescription>Enter the technology and its control deficiencies to generate an AI-powered risk assessment.</CardDescription>
+        <CardDescription>Enter the technology and its control deficiencies to start the AI-powered risk assessment process.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -80,7 +80,7 @@ export function RiskForm({ onSubmit, isLoading }: RiskFormProps) {
             <div className="flex justify-end">
               <Button type="submit" disabled={isLoading || !form.formState.isValid} size="lg">
                 <BrainCircuit className="mr-2 h-5 w-5" />
-                {isLoading ? 'Generating...' : 'Generate Assessment'}
+                {isLoading ? 'Starting...' : 'Start Assessment'}
               </Button>
             </div>
           </form>
