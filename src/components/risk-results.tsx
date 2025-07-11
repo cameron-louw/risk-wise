@@ -17,6 +17,7 @@ import { generateRiskStatement } from '@/ai/flows/generate-risk-statement';
 import { generateSuggestedControls } from '@/ai/flows/generate-suggested-controls';
 import { generateClarifyingQuestions } from '@/ai/flows/generate-clarifying-questions';
 import { CiaImpactChart } from './cia-impact-chart';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface RiskResultsProps {
   initialData: RiskAssessment;
@@ -403,100 +404,132 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <Info className="h-6 w-6 text-accent" />
-            <span>Refine & Recalculate</span>
-          </CardTitle>
-          <CardDescription>Add mitigating controls or answer clarifying questions to refine the assessment, then click recalculate.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Add Mitigating Controls</h4>
-            <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={newControl}
-                  onChange={(e) => setNewControl(e.target.value)}
-                  placeholder="e.g., Implement MFA, Encrypt data at rest"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddControl()}
-                />
-                <Button onClick={() => handleAddControl()} variant="outline" size="icon">
-                  <PlusCircle className="h-4 w-4" />
-                </Button>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            {hasControls ? (
-              <>
-                <p className="text-sm font-medium">Applied Mitigating Controls:</p>
-                <ul className="space-y-2">
-                  {controls.map((control, index) => (
-                    <li key={index} className="flex items-center justify-between bg-secondary p-2 rounded-md">
-                      <span>{control}</span>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveControl(index)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
-            )}
-          </div>
-          
-          {hasSuggestedControls && (
-            <div className="space-y-3 pt-4">
-              <Separator />
-              <h4 className="flex items-center pt-2 text-sm font-semibold">
-                <Lightbulb className="mr-2 h-4 w-4 text-yellow-400" />
-                <span>Suggested Controls</span>
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {suggestedControls.map((control, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddControl(control)}
-                    className="flex items-center gap-2 h-auto text-wrap text-left justify-start"
-                  >
-                    <PlusCircle className="h-4 w-4 flex-shrink-0" />
-                    <span>{control}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+      <Accordion type="multiple" className="w-full space-y-6">
+        <Card>
+            <AccordionItem value="refine" className="border-0">
+                <CardHeader className="pb-2">
+                    <AccordionTrigger className="p-0 hover:no-underline">
+                        <CardTitle className="flex items-center gap-3">
+                            <Sparkles className="h-6 w-6 text-accent" />
+                            <span>Refine & Recalculate</span>
+                        </CardTitle>
+                    </AccordionTrigger>
+                    <CardDescription>Add mitigating controls or answer clarifying questions to refine the assessment, then click recalculate.</CardDescription>
+                </CardHeader>
+                <AccordionContent>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium">Add Mitigating Controls</h4>
+                            <div className="flex gap-2">
+                                <Input
+                                type="text"
+                                value={newControl}
+                                onChange={(e) => setNewControl(e.target.value)}
+                                placeholder="e.g., Implement MFA, Encrypt data at rest"
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddControl()}
+                                />
+                                <Button onClick={() => handleAddControl()} variant="outline" size="icon">
+                                <PlusCircle className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            {hasControls ? (
+                            <>
+                                <p className="text-sm font-medium">Applied Mitigating Controls:</p>
+                                <ul className="space-y-2">
+                                {controls.map((control, index) => (
+                                    <li key={index} className="flex items-center justify-between bg-secondary p-2 rounded-md">
+                                    <span>{control}</span>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveControl(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                    </li>
+                                ))}
+                                </ul>
+                            </>
+                            ) : (
+                            <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
+                            )}
+                        </div>
+                        
+                        <div className="flex justify-end pt-4">
+                            <Button onClick={handleRecalculate} disabled={isRecalculating}>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                {isRecalculating ? 'Recalculating...' : recalculateText}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </AccordionContent>
+            </AccordionItem>
+        </Card>
+        
+        {hasSuggestedControls && (
+            <Card>
+                <AccordionItem value="suggested-controls" className="border-0">
+                    <CardHeader className="pb-2">
+                        <AccordionTrigger className="p-0 hover:no-underline">
+                             <CardTitle className="flex items-center gap-3">
+                                <Lightbulb className="mr-2 h-6 w-6 text-yellow-400" />
+                                <span>Suggested Controls</span>
+                            </CardTitle>
+                        </AccordionTrigger>
+                    </CardHeader>
+                    <AccordionContent>
+                        <CardContent>
+                            <div className="flex flex-wrap gap-2">
+                                {suggestedControls.map((control, index) => (
+                                <Button
+                                    key={index}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAddControl(control)}
+                                    className="flex items-center gap-2 h-auto text-wrap text-left justify-start"
+                                >
+                                    <PlusCircle className="h-4 w-4 flex-shrink-0" />
+                                    <span>{control}</span>
+                                </Button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </AccordionContent>
+                </AccordionItem>
+            </Card>
+        )}
 
-          {hasClarifyingQuestions && (
-            <div className="pt-4">
-                <Separator />
-                 <ClarifyingQuestions 
-                    questions={clarifyingQuestions} 
-                    answers={questionAnswers || []}
-                    onAnswerChange={(index, answer) => {
-                        const newAnswers = [...(currentAssessment.questionAnswers || [])];
-                        newAnswers[index] = answer;
-                        const updatedAssessment = {...currentAssessment, questionAnswers: newAnswers};
-                        setCurrentAssessment(updatedAssessment);
-                        onAssessmentUpdate(updatedAssessment);
-                    }}
-                />
-            </div>
-          )}
+        {hasClarifyingQuestions && (
+            <Card className="shadow-none border-dashed">
+                <AccordionItem value="clarifying-questions" className="border-0">
+                     <CardHeader className="pb-2">
+                        <AccordionTrigger className="p-0 hover:no-underline">
+                             <CardTitle className="flex items-center gap-3">
+                                <MessageCircleQuestion className="h-6 w-6 text-primary" />
+                                <span>Refine with Q&A</span>
+                            </CardTitle>
+                        </AccordionTrigger>
+                         <CardDescription>Answer these clarifying questions to provide more context and improve the accuracy of the risk assessment when you recalculate.</CardDescription>
+                    </CardHeader>
+                    <AccordionContent>
+                        <CardContent>
+                            <ClarifyingQuestions 
+                                questions={clarifyingQuestions} 
+                                answers={questionAnswers || []}
+                                onAnswerChange={(index, answer) => {
+                                    const newAnswers = [...(currentAssessment.questionAnswers || [])];
+                                    newAnswers[index] = answer;
+                                    const updatedAssessment = {...currentAssessment, questionAnswers: newAnswers};
+                                    setCurrentAssessment(updatedAssessment);
+                                    onAssessmentUpdate(updatedAssessment);
+                                }}
+                            />
+                        </CardContent>
+                    </AccordionContent>
+                </AccordionItem>
+            </Card>
+        )}
+      </Accordion>
 
-          <div className="flex justify-end pt-4">
-              <Button onClick={handleRecalculate} disabled={isRecalculating}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isRecalculating ? 'Recalculating...' : recalculateText}
-              </Button>
-            </div>
-        </CardContent>
-      </Card>
 
       <div className="flex justify-end pt-2">
         <Button onClick={handleSaveRisk} size="lg">
