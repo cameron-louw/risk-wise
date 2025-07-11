@@ -180,6 +180,7 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
         likelihood: rateResult.likelihood, 
         impact: rateResult.impact,
         ciaImpact: rateResult.ciaImpact,
+        controls: [], // Clear applied controls
         suggestedControls: controlsResult.suggestedControls,
         clarifyingQuestions: questionsResult.questions,
         questionAnswers: new Array(questionsResult.questions.length).fill('')
@@ -307,7 +308,7 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-center w-full">
-            <div className="flex-none flex items-center justify-center font-bold -rotate-90">Likelihood</div>
+            <div className="flex-none flex items-center justify-center font-bold -rotate-90 w-16">Likelihood</div>
             <div className="flex-grow">
               <div className="grid grid-cols-5 w-full text-center font-bold border-t">
                 {riskLevels.map((impactLevel) => (
@@ -363,6 +364,16 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
               </Badge>
             </div>
           </div>
+          {hasControls && (
+             <div className="space-y-2 pt-4">
+                <h4 className="text-sm font-medium text-center text-muted-foreground">Applied Controls</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
+                    {controls.map((control, index) => (
+                        <Badge key={index} variant="secondary">{control}</Badge>
+                    ))}
+                </div>
+            </div>
+          )}
           <div className="text-center text-sm text-muted-foreground">
             Risk ratings explained: 1-5 (Low), 6-15 (Medium), 16-25 (High).
           </div>
