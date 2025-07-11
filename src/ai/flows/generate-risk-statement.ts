@@ -27,31 +27,16 @@ export async function generateRiskStatement(input: GenerateRiskStatementInput): 
   return generateRiskStatementFlow(input);
 }
 
-const hasMultipleDeficienciesTool = ai.defineTool({
-  name: 'hasMultipleDeficiencies',
-  description: 'Determines if there are multiple control deficiencies.',
-  inputSchema: z.object({
-    controlDeficiencies: z.string().describe('The control deficiencies to check.'),
-  }),
-  outputSchema: z.boolean(),
-}, async (input) => {
-  const deficiencies = input.controlDeficiencies.split(/\r?\n/).filter(deficiency => deficiency.trim() !== '');
-  return deficiencies.length > 1;
-});
-
 const prompt = ai.definePrompt({
   name: 'generateRiskStatementPrompt',
   input: {schema: GenerateRiskStatementInputSchema},
   output: {schema: GenerateRiskStatementOutputSchema},
-  tools: [hasMultipleDeficienciesTool],
   prompt: `Given the technology and its control deficiencies, generate a concise risk statement.
 
 Technology: {{{technology}}}
 Control Deficiencies: {{{controlDeficiencies}}}
 
-Generate a concise risk statement in the following format: "a [threat actor] [risk event] which leads to [impact]".
-
-Consider whether the risk has one or multiple control deficiencies using the hasMultipleDeficiencies tool.
+Generate a concise risk statement in the following format: "A [threat actor] could leverage the [control deficiencies] to [perform a malicious action], resulting in [impact on the business]."
 
 Risk Statement: `,
 });
