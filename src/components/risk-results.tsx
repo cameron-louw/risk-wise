@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { RiskAssessment } from '@/types';
-import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw, MessageCircleQuestion, Lock, Shield, ServerCrash } from 'lucide-react';
+import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw, MessageCircleQuestion, Lock, Shield, ServerCrash, ShieldCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { rateRisk } from '@/ai/flows/rate-risk';
