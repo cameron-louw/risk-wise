@@ -102,7 +102,7 @@ export function RiskResults({ data }: RiskResultsProps) {
         riskDescription,
         controls,
       });
-      setCurrentAssessment({ ...currentAssessment, ...result });
+      setCurrentAssessment({ ...currentAssessment, likelihood: result.likelihood, impact: result.impact });
     } catch (e) {
       console.error(e);
       toast({
@@ -115,8 +115,9 @@ export function RiskResults({ data }: RiskResultsProps) {
     }
   };
 
-  const { likelihood, impact } = currentAssessment;
+  const { likelihood, impact, controls } = currentAssessment;
   const totalRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
+  const hasControls = controls && controls.length > 0;
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
@@ -258,29 +259,31 @@ export function RiskResults({ data }: RiskResultsProps) {
               <PlusCircle className="h-4 w-4" />
             </Button>
           </div>
-          {(currentAssessment.controls && currentAssessment.controls.length > 0) ? (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Applied Mitigating Controls:</p>
-              <ul className="space-y-2">
-                {currentAssessment.controls.map((control, index) => (
-                  <li key={index} className="flex items-center justify-between bg-secondary p-2 rounded-md">
-                    <span>{control}</span>
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveControl(index)}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-               <div className="flex justify-end pt-2">
-                 <Button onClick={handleRecalculate} disabled={isRecalculating}>
-                   <Sparkles className="mr-2 h-4 w-4" />
-                   {isRecalculating ? 'Recalculating...' : 'Recalculate Risk with Controls'}
-                 </Button>
-              </div>
+          <div className="space-y-2">
+            {hasControls ? (
+              <>
+                <p className="text-sm font-medium">Applied Mitigating Controls:</p>
+                <ul className="space-y-2">
+                  {controls.map((control, index) => (
+                    <li key={index} className="flex items-center justify-between bg-secondary p-2 rounded-md">
+                      <span>{control}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveControl(index)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
+            )}
+            <div className="flex justify-end pt-2">
+              <Button onClick={handleRecalculate} disabled={isRecalculating}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {isRecalculating ? 'Recalculating...' : hasControls ? 'Recalculate with Controls' : 'Recalculate Assessment'}
+              </Button>
             </div>
-          ) : (
-            <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>
