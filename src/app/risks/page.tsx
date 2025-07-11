@@ -95,10 +95,8 @@ export default function RiskListPage() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Link href={`/risks/${risk.id}`} passHref>
-                                                    <Button variant="ghost" size="icon" asChild>
-                                                        <a onClick={(e) => e.stopPropagation()}>
-                                                            <Eye className="h-4 w-4" />
-                                                        </a>
+                                                    <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
+                                                        <Eye className="h-4 w-4" />
                                                     </Button>
                                                 </Link>
                                                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteRisk(risk.id); }}>
