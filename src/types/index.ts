@@ -11,6 +11,11 @@ export type RiskAssessment = {
     rating: string;
     justification: string;
   };
+  ciaImpact: {
+    confidentiality: { rating: string; justification: string; };
+    integrity: { rating: string; justification: string; };
+    availability: { rating: string; justification: string; };
+  };
   controls?: string[];
   suggestedControls?: string[];
   clarifyingQuestions?: string[];

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { RiskAssessment } from '@/types';
-import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw, MessageCircleQuestion } from 'lucide-react';
+import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw, MessageCircleQuestion, Lock, Shield, ServerCrash } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { rateRisk } from '@/ai/flows/rate-risk';
@@ -14,6 +14,7 @@ import { ClarifyingQuestions } from './clarifying-questions';
 import { generateRiskDescription } from '@/ai/flows/generate-risk-description';
 import { generateRiskStatement } from '@/ai/flows/generate-risk-statement';
 import { generateSuggestedControls } from '@/ai/flows/generate-suggested-controls';
+import { CiaImpactChart } from './cia-impact-chart';
 
 interface RiskResultsProps {
   data: RiskAssessment;
@@ -65,7 +66,7 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
 
   const getBadgeVariant = (level: string): 'destructive' | 'secondary' | 'outline' => {
     const lowerLevel = (level || '').toLowerCase();
-    if (lowerLevel.includes('very high') || lowerLevel.includes('high')) return 'destructive';
+    if (lowerLevel.includes('very high') || lowerLevel.includes('high') || lowerLevel.includes('critical')) return 'destructive';
     if (lowerLevel.includes('medium')) return 'secondary';
     return 'outline';
   };
@@ -139,6 +140,7 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
         riskDescription,
         likelihood: rateResult.likelihood, 
         impact: rateResult.impact,
+        ciaImpact: rateResult.ciaImpact,
         suggestedControls: controlsResult.suggestedControls
       });
     } catch (e) {
@@ -153,11 +155,14 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
     }
   };
 
-  const { likelihood, impact, controls, suggestedControls, clarifyingQuestions, questionAnswers } = currentAssessment;
+  const { likelihood, impact, controls, suggestedControls, clarifyingQuestions, questionAnswers, ciaImpact } = currentAssessment;
   const totalRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
   const hasControls = controls && controls.length > 0;
   const hasSuggestedControls = suggestedControls && suggestedControls.length > 0;
   const hasClarifyingQuestions = clarifyingQuestions && clarifyingQuestions.length > 0;
+  
+  const hasAnswers = (questionAnswers || []).some(a => !!a?.trim());
+  const recalculateText = hasControls || hasAnswers ? 'Recalculate with new information' : 'Recalculate Assessment';
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
@@ -260,7 +265,7 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
                   return (
                     <div
                       key={`${likelihoodLevel}-${impactLevel}`}
-                      className={`p-4 border-r border-b flex items-center justify-center text-sm ${getCellColor(cellRating)} ${isHighlighted ? 'ring-4 ring-blue-500 z-10' : ''}`}
+                      className={`p-4 border-r border-b flex items-center justify-center text-sm ${getCellColor(cellRating)} ${isHighlighted ? 'ring-4 ring-primary z-10' : ''}`}
                     >
                       {cellRating || '-'}
                     </div>
@@ -284,27 +289,63 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
         </CardContent>
       </Card>
 
+      {ciaImpact && (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                    <ShieldCheck className="h-6 w-6 text-accent" />
+                    <span>CIA Triad Impact Analysis</span>
+                </CardTitle>
+                <CardDescription>Impact on Confidentiality, Integrity, and Availability.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <CiaImpactChart data={ciaImpact} />
+                <div className="grid md:grid-cols-3 gap-6 pt-4">
+                    <div className="space-y-2">
+                        <h4 className="flex items-center font-semibold text-primary"><Lock className="mr-2 h-5 w-5" />Confidentiality</h4>
+                        <Badge variant={getBadgeVariant(ciaImpact.confidentiality.rating)}>{ciaImpact.confidentiality.rating}</Badge>
+                        <p className="text-sm text-muted-foreground">{ciaImpact.confidentiality.justification}</p>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="flex items-center font-semibold text-primary"><Shield className="mr-2 h-5 w-5" />Integrity</h4>
+                        <Badge variant={getBadgeVariant(ciaImpact.integrity.rating)}>{ciaImpact.integrity.rating}</Badge>
+                        <p className="text-sm text-muted-foreground">{ciaImpact.integrity.justification}</p>
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="flex items-center font-semibold text-primary"><ServerCrash className="mr-2 h-5 w-5" />Availability</h4>
+                        <Badge variant={getBadgeVariant(ciaImpact.availability.rating)}>{ciaImpact.availability.rating}</Badge>
+                        <p className="text-sm text-muted-foreground">{ciaImpact.availability.justification}</p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <Info className="h-6 w-6 text-accent" />
-            <span>Add Mitigating Controls</span>
+            <span>Refine & Recalculate</span>
           </CardTitle>
-          <CardDescription>Add controls to see how they impact the risk assessment, then click recalculate.</CardDescription>
+          <CardDescription>Add mitigating controls or answer clarifying questions to refine the assessment, then click recalculate.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              value={newControl}
-              onChange={(e) => setNewControl(e.target.value)}
-              placeholder="e.g., Implement MFA, Encrypt data at rest"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddControl()}
-            />
-            <Button onClick={() => handleAddControl()} variant="outline" size="icon">
-              <PlusCircle className="h-4 w-4" />
-            </Button>
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Add Mitigating Controls</h4>
+            <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newControl}
+                  onChange={(e) => setNewControl(e.target.value)}
+                  placeholder="e.g., Implement MFA, Encrypt data at rest"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddControl()}
+                />
+                <Button onClick={() => handleAddControl()} variant="outline" size="icon">
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+            </div>
           </div>
+          
           <div className="space-y-2">
             {hasControls ? (
               <>
@@ -323,8 +364,8 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             ) : (
               <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
             )}
-            
           </div>
+          
           {hasSuggestedControls && (
             <div className="space-y-3 pt-4">
               <Separator />
@@ -350,7 +391,7 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
           )}
 
           {hasClarifyingQuestions && (
-            <div className="space-y-3 pt-4">
+            <div className="pt-4">
                 <Separator />
                  <ClarifyingQuestions 
                     questions={clarifyingQuestions} 
@@ -364,10 +405,10 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             </div>
           )}
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end pt-4">
               <Button onClick={handleRecalculate} disabled={isRecalculating}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {isRecalculating ? 'Recalculating...' : 'Recalculate Assessment'}
+                {isRecalculating ? 'Recalculating...' : recalculateText}
               </Button>
             </div>
         </CardContent>

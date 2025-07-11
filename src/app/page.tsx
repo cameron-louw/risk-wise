@@ -49,7 +49,7 @@ export default function Home() {
       ]);
       
       const { riskDescription } = riskDescriptionResult;
-      const { likelihood, impact } = rateRiskResult;
+      const { likelihood, impact, ciaImpact } = rateRiskResult;
       const { suggestedControls } = suggestedControlsResult;
 
       setResults({
@@ -59,6 +59,7 @@ export default function Home() {
         riskDescription,
         likelihood,
         impact,
+        ciaImpact,
         controls: [],
         suggestedControls: suggestedControls || [],
         clarifyingQuestions: clarifyingQuestionsResult.questions,

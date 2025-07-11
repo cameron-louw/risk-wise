@@ -21,6 +21,12 @@ const RateRiskInputSchema = z.object({
 export type RateRiskInput = z.infer<typeof RateRiskInputSchema>;
 
 const ratingScale = z.enum(['Very Low', 'Low', 'Medium', 'High', 'Very High']);
+const ciaRatingScale = z.enum(['Low', 'Medium', 'High', 'Critical']);
+
+const CiaImpactSchema = z.object({
+  rating: ciaRatingScale.describe('The impact rating for this CIA component (Low, Medium, High, Critical).'),
+  justification: z.string().describe('A detailed justification for the rating.'),
+});
 
 const RateRiskOutputSchema = z.object({
   likelihood: z.object({
@@ -31,6 +37,11 @@ const RateRiskOutputSchema = z.object({
     rating: ratingScale.describe('The impact if the risk occurs (Very Low, Low, Medium, High, Very High).'),
     justification: z.string().describe('A detailed justification for the impact rating based on the FAIR framework.'),
   }),
+  ciaImpact: z.object({
+    confidentiality: CiaImpactSchema,
+    integrity: CiaImpactSchema,
+    availability: CiaImpactSchema,
+  }).describe('An analysis of the impact on the Confidentiality, Integrity, and Availability (CIA) triad.'),
 });
 export type RateRiskOutput = z.infer<typeof RateRiskOutputSchema>
 
@@ -71,6 +82,13 @@ const rateRiskPrompt = ai.definePrompt({
     -   If mitigating controls are present, evaluate how they reduce the magnitude of loss.
     -   Provide an **Impact Rating** on a scale of **Very Low, Low, Medium, High, Very High**.
     -   Provide a detailed **Justification** for your impact rating, explaining your reasoning based on FAIR principles (Magnitude of Loss) and the effect of any controls.
+
+3.  **Analyze CIA Triad Impact:**
+    -   Assess the impact of the risk on the three pillars of the CIA triad.
+    -   **Confidentiality:** How does this risk affect the privacy and secrecy of data? (Unauthorized disclosure)
+    -   **Integrity:** How does this risk affect the trustworthiness and accuracy of data? (Unauthorized modification or destruction)
+    -   **Availability:** How does this risk affect access to the system and data? (Disruption of access)
+    -   For each of the three pillars, provide a **Rating** on a scale of **Low, Medium, High, Critical** and a detailed **Justification** for your rating.
 
 Your response must be in the specified JSON format.
 `,
