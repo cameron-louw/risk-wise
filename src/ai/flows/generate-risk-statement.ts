@@ -49,7 +49,7 @@ const prompt = ai.definePrompt({
 Technology: {{{technology}}}
 Control Deficiencies: {{{controlDeficiencies}}}
 
-Identify the threat actor (internal or external), the risk event (what went wrong), and the repercussion (e.g., reputational harm, penalties) based on the provided technology and control deficiencies.
+Generate a concise risk statement in the following format: "a [threat actor] [risk event] which leads to [impact]".
 
 Consider whether the risk has one or multiple control deficiencies using the hasMultipleDeficiencies tool.
 

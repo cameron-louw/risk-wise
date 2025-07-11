@@ -50,8 +50,8 @@ Provide an impact rating (Low, Medium, High) with a justification.
 
 Ensure that the ratings are based on the severity and probability implied by the deficiencies and risk descriptions.
 
-Likelihood: // Rating and justification here
-Impact: // Rating and justification here`,
+Likelihood: // Rating and justification here. Justify here why the likelihood rating is what it is and include any control variables that may reduce the likelihood to the likelihood that it is now here in this assessment.
+Impact: // Rating and justification here, include justification of why the impact is rated as it is and what controls are in place to reduce that impact at this point.`,
 });
 
 const rateRiskFlow = ai.defineFlow(
