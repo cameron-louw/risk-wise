@@ -36,9 +36,8 @@ const prompt = ai.definePrompt({
 Technology: {{{technology}}}
 Control Deficiencies: {{{controlDeficiencies}}}
 
-Generate a concise risk statement in the following format: "A [threat actor] could leverage the [control deficiencies] to [perform a malicious action], resulting in [impact on the business]."
-
-Risk Statement: `,
+Generate a concise risk statement that describes a potential threat scenario.
+`,
 });
 
 const generateRiskStatementFlow = ai.defineFlow(
