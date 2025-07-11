@@ -264,29 +264,6 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
           <CardDescription>Add controls to see how they impact the risk assessment, then click recalculate.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {hasSuggestedControls && (
-            <div className="space-y-3">
-              <h4 className="flex items-center text-sm font-semibold">
-                <Lightbulb className="mr-2 h-4 w-4 text-yellow-400" />
-                <span>Suggested Controls</span>
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {suggestedControls.map((control, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddControl(control)}
-                    className="flex items-center gap-2"
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    {control}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-          
           <div className="flex gap-2">
             <Input
               type="text"
@@ -324,6 +301,29 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
               </Button>
             </div>
           </div>
+          {hasSuggestedControls && (
+            <div className="space-y-3 pt-4">
+              <Separator />
+              <h4 className="flex items-center pt-2 text-sm font-semibold">
+                <Lightbulb className="mr-2 h-4 w-4 text-yellow-400" />
+                <span>Suggested Controls</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {suggestedControls.map((control, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddControl(control)}
+                    className="flex items-center gap-2 h-auto text-wrap text-left justify-start"
+                  >
+                    <PlusCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{control}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
