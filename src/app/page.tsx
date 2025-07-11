@@ -5,6 +5,7 @@ import { ShieldCheck } from 'lucide-react';
 import { generateRiskStatement } from '@/ai/flows/generate-risk-statement';
 import { generateRiskDescription } from '@/ai/flows/generate-risk-description';
 import { rateRisk } from '@/ai/flows/rate-risk';
+import { generateSuggestedControls } from '@/ai/flows/generate-suggested-controls';
 import { RiskForm } from '@/components/risk-form';
 import { RiskResults } from '@/components/risk-results';
 import { type RiskAssessment } from '@/types';
@@ -23,6 +24,7 @@ export default function Home() {
     try {
       const { technology, controlDeficiencies } = data;
 
+      // Generate base assessment
       const { riskStatement } = await generateRiskStatement({ technology, controlDeficiencies });
       const { riskDescription } = await generateRiskDescription({ technology, riskStatement, controlDeficiencies });
       const { likelihood, impact } = await rateRisk({
@@ -30,6 +32,14 @@ export default function Home() {
         deficiencies: controlDeficiencies,
         riskStatement,
         riskDescription,
+      });
+
+      // Generate suggested controls
+      const { suggestedControls } = await generateSuggestedControls({
+        technology,
+        riskStatement,
+        riskDescription,
+        controlDeficiencies,
       });
 
       setResults({
@@ -40,6 +50,7 @@ export default function Home() {
         likelihood,
         impact,
         controls: [],
+        suggestedControls: suggestedControls || [],
       });
     } catch (e) {
       console.error(e);

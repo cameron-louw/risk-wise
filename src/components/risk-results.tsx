@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { RiskAssessment } from '@/types';
-import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle } from 'lucide-react';
+import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { rateRisk } from '@/ai/flows/rate-risk';
@@ -79,9 +79,18 @@ export function RiskResults({ data }: RiskResultsProps) {
     return 'outline';
   };
   
-  const handleAddControl = () => {
-    if (newControl.trim() === '') return;
-    const updatedControls = [...(currentAssessment.controls || []), newControl.trim()];
+  const handleAddControl = (controlToAdd?: string) => {
+    const control = (controlToAdd || newControl).trim();
+    if (control === '') return;
+    if ((currentAssessment.controls || []).includes(control)) {
+      toast({
+        variant: "default",
+        title: "Control already added",
+        description: "This control is already in the list.",
+      });
+      return;
+    }
+    const updatedControls = [...(currentAssessment.controls || []), control];
     setCurrentAssessment({ ...currentAssessment, controls: updatedControls });
     setNewControl('');
   };
@@ -115,9 +124,10 @@ export function RiskResults({ data }: RiskResultsProps) {
     }
   };
 
-  const { likelihood, impact, controls } = currentAssessment;
+  const { likelihood, impact, controls, suggestedControls } = currentAssessment;
   const totalRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
   const hasControls = controls && controls.length > 0;
+  const hasSuggestedControls = suggestedControls && suggestedControls.length > 0;
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
@@ -247,6 +257,29 @@ export function RiskResults({ data }: RiskResultsProps) {
           <CardDescription>Add controls to see how they impact the risk assessment, then click recalculate.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {hasSuggestedControls && (
+            <div className="space-y-3">
+              <h4 className="flex items-center text-sm font-semibold">
+                <Lightbulb className="mr-2 h-4 w-4 text-yellow-400" />
+                <span>Suggested Controls</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {suggestedControls.map((control, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddControl(control)}
+                    className="flex items-center gap-2"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    {control}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <div className="flex gap-2">
             <Input
               type="text"
@@ -255,7 +288,7 @@ export function RiskResults({ data }: RiskResultsProps) {
               placeholder="e.g., Implement MFA, Encrypt data at rest"
               onKeyDown={(e) => e.key === 'Enter' && handleAddControl()}
             />
-            <Button onClick={handleAddControl} variant="outline" size="icon">
+            <Button onClick={() => handleAddControl()} variant="outline" size="icon">
               <PlusCircle className="h-4 w-4" />
             </Button>
           </div>

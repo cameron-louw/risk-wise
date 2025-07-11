@@ -12,4 +12,5 @@ export type RiskAssessment = {
     justification: string;
   };
   controls?: string[];
+  suggestedControls?: string[];
 };
