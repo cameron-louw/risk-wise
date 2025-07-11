@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,24 +19,27 @@ import { generateClarifyingQuestions } from '@/ai/flows/generate-clarifying-ques
 import { CiaImpactChart } from './cia-impact-chart';
 
 interface RiskResultsProps {
-  data: RiskAssessment;
+  initialData: RiskAssessment;
   onStartOver: () => void;
+  onAssessmentUpdate: (updatedAssessment: RiskAssessment) => void;
+  isSavedView?: boolean;
 }
-
-const likelihoodLevels = ['Very Low', 'Low', 'Medium', 'High', 'Very High'];
-const impactLevels = ['Very Low', 'Low', 'Medium', 'High', 'Very High'];
 
 const ratingValueMap: { [key: string]: number } = {
   'Very Low': 1, 'Low': 2, 'Medium': 3, 'High': 4, 'Very High': 5,
 };
 
-export function RiskResults({ data, onStartOver }: RiskResultsProps) {
+export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSavedView = false }: RiskResultsProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const [currentAssessment, setCurrentAssessment] = useState<RiskAssessment>(data);
+  const [currentAssessment, setCurrentAssessment] = useState<RiskAssessment>(initialData);
   const [newControl, setNewControl] = useState('');
   const [isRecalculating, setIsRecalculating] = useState(false);
   
+  useEffect(() => {
+    setCurrentAssessment(initialData);
+  }, [initialData]);
+
   const handleExport = () => {
     const { technology, controlDeficiencies, riskStatement, riskDescription, likelihood, impact } = currentAssessment;
     
@@ -76,7 +79,9 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             title: "Risk Saved",
             description: "Your risk assessment has been saved successfully.",
         });
-        router.push('/risks');
+        if (!isSavedView) {
+            router.push('/risks');
+        }
     } catch (e) {
         console.error(e);
         toast({
@@ -95,11 +100,11 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
   };
   
   const getCellColor = (rating: number): string => {
-    if (rating >= 16) return 'bg-red-500/50';
-    if (rating >= 10) return 'bg-yellow-500/50';
-    if (rating >= 6) return 'bg-yellow-400/50';
-    if (rating >= 3) return 'bg-green-400/50';
-    return 'bg-green-500/50';
+    if (rating >= 16) return 'bg-red-500/20';
+    if (rating >= 10) return 'bg-yellow-500/20';
+    if (rating >= 6) return 'bg-yellow-400/20';
+    if (rating >= 3) return 'bg-green-400/20';
+    return 'bg-green-500/20';
   };
 
   const getTotalRatingBadgeVariant = (rating: number): 'destructive' | 'secondary' | 'outline' => {
@@ -119,14 +124,20 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
       });
       return;
     }
-    const updatedControls = [...(currentAssessment.controls || []), control];
-    setCurrentAssessment({ ...currentAssessment, controls: updatedControls });
+    const updatedAssessment = {
+        ...currentAssessment,
+        controls: [...(currentAssessment.controls || []), control]
+    };
+    setCurrentAssessment(updatedAssessment);
+    onAssessmentUpdate(updatedAssessment);
     setNewControl('');
   };
 
   const handleRemoveControl = (index: number) => {
     const updatedControls = (currentAssessment.controls || []).filter((_, i) => i !== index);
-    setCurrentAssessment({ ...currentAssessment, controls: updatedControls });
+    const updatedAssessment = { ...currentAssessment, controls: updatedControls };
+    setCurrentAssessment(updatedAssessment);
+    onAssessmentUpdate(updatedAssessment);
   };
   
   const handleRecalculate = async () => {
@@ -160,8 +171,8 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             controlDeficiencies: enrichedDeficiencies
         })
       ]);
-
-      setCurrentAssessment({ 
+      
+      const updatedAssessment = { 
         ...currentAssessment,
         riskStatement,
         riskDescription,
@@ -171,7 +182,11 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
         suggestedControls: controlsResult.suggestedControls,
         clarifyingQuestions: questionsResult.questions,
         questionAnswers: new Array(questionsResult.questions.length).fill('')
-      });
+      };
+
+      setCurrentAssessment(updatedAssessment);
+      onAssessmentUpdate(updatedAssessment);
+
     } catch (e) {
       console.error(e);
       toast({
@@ -184,8 +199,11 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
     }
   };
 
-  const { likelihood, impact, controls, suggestedControls, clarifyingQuestions, questionAnswers, ciaImpact } = currentAssessment;
-  const totalRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
+  const { initialLikelihood, initialImpact, initialCiaImpact, likelihood, impact, controls, suggestedControls, clarifyingQuestions, questionAnswers, ciaImpact } = currentAssessment;
+  
+  const residualRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
+  const inherentRating = initialLikelihood && initialImpact ? (ratingValueMap[initialLikelihood.rating] || 0) * (ratingValueMap[initialImpact.rating] || 0) : residualRating;
+  
   const hasControls = controls && controls.length > 0;
   const hasSuggestedControls = suggestedControls && suggestedControls.length > 0;
   const hasClarifyingQuestions = clarifyingQuestions && clarifyingQuestions.length > 0;
@@ -195,19 +213,21 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
-      <div className="flex flex-wrap gap-4 justify-between items-center">
-        <h2 className="text-2xl font-semibold">Assessment Results</h2>
-        <div className="flex gap-2">
-            <Button onClick={onStartOver} variant="outline">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Start New Assessment
-            </Button>
-            <Button onClick={handleExport} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Export to CSV
-            </Button>
+      {!isSavedView && (
+        <div className="flex flex-wrap gap-4 justify-between items-center">
+          <h2 className="text-2xl font-semibold">Assessment Results</h2>
+          <div className="flex gap-2">
+              <Button onClick={onStartOver} variant="outline">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Start New Assessment
+              </Button>
+              <Button onClick={handleExport} variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export to CSV
+              </Button>
+          </div>
         </div>
-      </div>
+      )}
       
       <Card>
         <CardHeader>
@@ -273,44 +293,65 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             <ShieldAlert className="h-6 w-6 text-accent" />
             <span>Risk Matrix</span>
           </CardTitle>
-          <CardDescription>Understanding your risk level based on likelihood and impact.</CardDescription>
+          <CardDescription>
+            Comparing inherent risk (before controls) to residual risk (after controls). 
+            <span className="inline-block w-3 h-3 bg-primary/50 rounded-full mx-1.5"></span> Inherent, 
+            <span className="inline-block w-3 h-3 bg-primary rounded-full mx-1.5"></span> Residual
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center justify-center w-full">
             <div className="grid grid-cols-6 w-full text-center font-bold border-l border-t">
-              <div className="p-2 border-r border-b flex items-center justify-center"></div>
-              {impactLevels.slice().reverse().map((impactLevel) => (
+              <div className="p-2 border-r border-b flex items-center justify-center -rotate-90">Likelihood</div>
+              {['Very Low', 'Low', 'Medium', 'High', 'Very High'].map((impactLevel) => (
                 <div key={impactLevel} className="p-2 border-r border-b flex items-center justify-center">{impactLevel}</div>
               ))}
             </div>
-            {likelihoodLevels.slice().reverse().map((likelihoodLevel) => (
+            {['Very High', 'High', 'Medium', 'Low', 'Very Low'].map((likelihoodLevel) => (
               <div key={likelihoodLevel} className="grid grid-cols-6 w-full text-center border-l border-b">
                 <div className="p-2 border-r flex items-center justify-center font-bold">
                   {likelihoodLevel}
                 </div>
-                {impactLevels.map((impactLevel) => {
+                {['Very Low', 'Low', 'Medium', 'High', 'Very High'].map((impactLevel) => {
                   const cellRating = (ratingValueMap[likelihoodLevel] || 0) * (ratingValueMap[impactLevel] || 0);
-                  const isHighlighted = likelihoodLevel === likelihood.rating && impactLevel === impact.rating;
+                  const isResidual = likelihoodLevel === likelihood.rating && impactLevel === impact.rating;
+                  const isInherent = initialLikelihood && initialImpact && likelihoodLevel === initialLikelihood.rating && impactLevel === initialImpact.rating;
+                  
                   return (
                     <div
                       key={`${likelihoodLevel}-${impactLevel}`}
-                      className={`p-4 border-r border-b flex items-center justify-center text-sm ${getCellColor(cellRating)} ${isHighlighted ? 'ring-4 ring-primary z-10' : ''}`}
+                      className={`relative p-4 border-r border-b flex items-center justify-center text-sm font-bold ${getCellColor(cellRating)}`}
                     >
                       {cellRating || '-'}
+                      {isInherent && (
+                          <div className="absolute inset-1 ring-2 ring-primary/50 rounded-full" title={`Inherent Risk (${initialLikelihood?.rating} / ${initialImpact?.rating})`}></div>
+                      )}
+                      {isResidual && (
+                          <div className="absolute inset-1 ring-2 ring-primary rounded-full" title={`Residual Risk (${likelihood.rating} / ${impact.rating})`}></div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             ))}
+             <div className="w-full text-center font-bold mt-2">Impact</div>
           </div>
 
           <Separator />
 
-          <div className="flex items-center justify-center gap-4">
-            <span className="text-lg font-semibold">Total Risk Rating:</span>
-            <Badge variant={getTotalRatingBadgeVariant(totalRating)} className="text-lg px-4 py-1 rounded-md">
-              {totalRating}
-            </Badge>
+          <div className="flex items-center justify-center gap-6">
+            <div className="flex items-center gap-2 text-center flex-col">
+              <span className="text-lg font-semibold">Inherent Risk</span>
+              <Badge variant={getTotalRatingBadgeVariant(inherentRating)} className="text-lg px-4 py-1 rounded-md">
+                {inherentRating}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2 text-center flex-col">
+              <span className="text-lg font-semibold">Residual Risk</span>
+              <Badge variant={getTotalRatingBadgeVariant(residualRating)} className="text-lg px-4 py-1 rounded-md">
+                {residualRating}
+              </Badge>
+            </div>
           </div>
           <div className="text-center text-sm text-muted-foreground">
             Risk ratings explained: 1-5 (Low), 6-15 (Medium), 16-25 (High).
@@ -325,10 +366,13 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
                     <ShieldCheck className="h-6 w-6 text-accent" />
                     <span>CIA Triad Impact Analysis</span>
                 </CardTitle>
-                <CardDescription>Impact on Confidentiality, Integrity, and Availability.</CardDescription>
+                <CardDescription>Comparing inherent vs residual impact on Confidentiality, Integrity, and Availability.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <CiaImpactChart data={ciaImpact} />
+                <CiaImpactChart 
+                  residual={ciaImpact}
+                  inherent={initialCiaImpact}
+                />
                 <div className="grid md:grid-cols-3 gap-6 pt-4">
                     <div className="space-y-2">
                         <h4 className="flex items-center font-semibold text-primary"><Lock className="mr-2 h-5 w-5" />Confidentiality</h4>
@@ -428,7 +472,9 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
                     onAnswerChange={(index, answer) => {
                         const newAnswers = [...(currentAssessment.questionAnswers || [])];
                         newAnswers[index] = answer;
-                        setCurrentAssessment({...currentAssessment, questionAnswers: newAnswers});
+                        const updatedAssessment = {...currentAssessment, questionAnswers: newAnswers};
+                        setCurrentAssessment(updatedAssessment);
+                        onAssessmentUpdate(updatedAssessment);
                     }}
                 />
             </div>
@@ -446,7 +492,7 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
       <div className="flex justify-end pt-2">
         <Button onClick={handleSaveRisk} size="lg">
           <Save className="mr-2 h-4 w-4" />
-          Save Risk & View List
+          {isSavedView ? 'Update Saved Risk' : 'Save Risk & View List'}
         </Button>
       </div>
     </div>

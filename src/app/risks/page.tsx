@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { type RiskAssessment } from '@/types';
-import { PlusCircle, Trash2, ArrowUpRight, ListChecks, ShieldCheck } from 'lucide-react';
+import { PlusCircle, Trash2, ArrowUpRight, ListChecks, ShieldCheck, Eye } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const ratingValueMap: { [key: string]: number } = {
@@ -20,7 +20,6 @@ export default function RiskListPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // This code runs only on the client, after the component has mounted.
     const savedRisks = JSON.parse(localStorage.getItem('riskAssessments') || '[]');
     setRisks(savedRisks);
   }, []);
@@ -31,6 +30,10 @@ export default function RiskListPage() {
     setRisks(updatedRisks);
   };
   
+  const viewRisk = (id: string) => {
+    router.push(`/risks/${id}`);
+  };
+
   const getTotalRatingBadgeVariant = (rating: number): 'destructive' | 'secondary' | 'outline' => {
     if (rating >= 16) return 'destructive';
     if (rating >= 6) return 'secondary';
@@ -92,7 +95,10 @@ export default function RiskListPage() {
                                                 <Badge variant={getTotalRatingBadgeVariant(totalRating)}>{totalRating}</Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" onClick={() => deleteRisk(risk.id)}>
+                                                <Button variant="ghost" size="icon" onClick={() => viewRisk(risk.id)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteRisk(risk.id); }}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>

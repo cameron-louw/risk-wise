@@ -29,37 +29,34 @@ export default function Home() {
     try {
       const { technology, controlDeficiencies } = data;
 
-      // Generate everything in parallel for speed
-      const [
-        riskStatementResult,
-        clarifyingQuestionsResult
-      ] = await Promise.all([
-        generateRiskStatement({ technology, controlDeficiencies }),
-        generateClarifyingQuestions({ technology, controlDeficiencies })
-      ]);
-
-      const { riskStatement } = riskStatementResult;
+      const { riskStatement } = await generateRiskStatement({ technology, controlDeficiencies });
 
       const [
         riskDescriptionResult,
         rateRiskResult,
-        suggestedControlsResult
+        suggestedControlsResult,
+        clarifyingQuestionsResult
       ] = await Promise.all([
          generateRiskDescription({ technology, riskStatement, controlDeficiencies }),
          rateRisk({ technology, deficiencies: controlDeficiencies, riskStatement, riskDescription: "" }),
-         generateSuggestedControls({ technology, riskStatement, riskDescription: "", controlDeficiencies })
+         generateSuggestedControls({ technology, riskStatement, riskDescription: "", controlDeficiencies }),
+         generateClarifyingQuestions({ technology, controlDeficiencies })
       ]);
       
       const { riskDescription } = riskDescriptionResult;
       const { likelihood, impact, ciaImpact } = rateRiskResult;
       const { suggestedControls } = suggestedControlsResult;
 
-      setResults({
-        id: new Date().toISOString(), // Add a unique ID
+      const newAssessment: RiskAssessment = {
+        id: new Date().toISOString(),
         technology,
         controlDeficiencies,
         riskStatement,
         riskDescription,
+        // Set initial and residual risk to be the same at first
+        initialLikelihood: likelihood,
+        initialImpact: impact,
+        initialCiaImpact: ciaImpact,
         likelihood,
         impact,
         ciaImpact,
@@ -67,8 +64,9 @@ export default function Home() {
         suggestedControls: suggestedControls || [],
         clarifyingQuestions: clarifyingQuestionsResult.questions,
         questionAnswers: new Array(clarifyingQuestionsResult.questions.length).fill('')
-      });
+      };
 
+      setResults(newAssessment);
       setStep('results');
     } catch (e) {
       console.error(e);
@@ -79,6 +77,10 @@ export default function Home() {
       });
       setStep('form');
     }
+  };
+  
+  const handleUpdateAssessment = (updatedAssessment: RiskAssessment) => {
+    setResults(updatedAssessment);
   };
 
   const startOver = () => {
@@ -109,7 +111,11 @@ export default function Home() {
           {step === 'form' && <RiskForm onSubmit={handleFormSubmit} isLoading={isLoading} />}
           {isLoading && <Loader text="Generating Initial Assessment..." />}
           {step === 'results' && results && (
-            <RiskResults data={results} onStartOver={startOver} />
+            <RiskResults 
+              initialData={results} 
+              onStartOver={startOver} 
+              onAssessmentUpdate={handleUpdateAssessment}
+            />
           )}
         </main>
       </div>

@@ -1,11 +1,11 @@
 'use client';
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import type { RiskAssessment } from '@/types';
+import type { CiaImpact } from '@/types';
 
 interface CiaImpactChartProps {
-  data: RiskAssessment['ciaImpact'];
+  residual: CiaImpact;
+  inherent?: CiaImpact;
 }
 
 const ratingValueMap: { [key: string]: number } = {
@@ -18,9 +18,13 @@ const ratingValueMap: { [key: string]: number } = {
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background border border-border p-2 rounded-md shadow-md">
+        <div className="bg-background border border-border p-2 rounded-md shadow-md text-sm">
           <p className="font-bold">{label}</p>
-          <p className="text-sm">{`Rating: ${payload[0].payload.rating}`}</p>
+          {payload.map((p: any, index: number) => (
+            <p key={index} style={{ color: p.color }}>
+              {`${p.name}: ${p.payload.ratings[p.dataKey]}`}
+            </p>
+          ))}
         </div>
       );
     }
@@ -28,11 +32,26 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
   };
 
-export function CiaImpactChart({ data }: CiaImpactChartProps) {
+export function CiaImpactChart({ residual, inherent }: CiaImpactChartProps) {
   const chartData = [
-    { name: 'Confidentiality', value: ratingValueMap[data.confidentiality.rating] || 0, rating: data.confidentiality.rating, fill: 'hsl(var(--chart-1))' },
-    { name: 'Integrity', value: ratingValueMap[data.integrity.rating] || 0, rating: data.integrity.rating, fill: 'hsl(var(--chart-2))' },
-    { name: 'Availability', value: ratingValueMap[data.availability.rating] || 0, rating: data.availability.rating, fill: 'hsl(var(--chart-3))' },
+    { 
+      name: 'Confidentiality', 
+      residual: ratingValueMap[residual.confidentiality.rating] || 0,
+      inherent: inherent ? ratingValueMap[inherent.confidentiality.rating] || 0 : 0,
+      ratings: { residual: residual.confidentiality.rating, inherent: inherent?.confidentiality.rating || 'N/A' },
+    },
+    { 
+      name: 'Integrity', 
+      residual: ratingValueMap[residual.integrity.rating] || 0,
+      inherent: inherent ? ratingValueMap[inherent.integrity.rating] || 0 : 0,
+      ratings: { residual: residual.integrity.rating, inherent: inherent?.integrity.rating || 'N/A' },
+    },
+    { 
+      name: 'Availability', 
+      residual: ratingValueMap[residual.availability.rating] || 0,
+      inherent: inherent ? ratingValueMap[inherent.availability.rating] || 0 : 0,
+      ratings: { residual: residual.availability.rating, inherent: inherent?.availability.rating || 'N/A' },
+    },
   ];
 
   return (
@@ -48,7 +67,9 @@ export function CiaImpactChart({ data }: CiaImpactChartProps) {
                     tickFormatter={(value) => ['Low', 'Medium', 'High', 'Critical'][value - 1]}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{fill: 'hsl(var(--muted))'}} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+                <Legend />
+                {inherent && <Bar dataKey="inherent" fill="hsl(var(--chart-1))" opacity={0.5} radius={[4, 4, 0, 0]} />}
+                <Bar dataKey="residual" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
             </BarChart>
         </ResponsiveContainer>
     </div>
