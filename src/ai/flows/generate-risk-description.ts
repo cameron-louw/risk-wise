@@ -14,7 +14,7 @@ import {z} from 'genkit';
 const GenerateRiskDescriptionInputSchema = z.object({
   technology: z.string().describe('The technology at risk.'),
   riskStatement: z.string().describe('The generated risk statement.'),
-  controlDeficiencies: z.string().describe('The control deficiencies associated with the risk.'),
+  controlDeficiencies: z.string().describe('The control deficiencies associated with the risk, possibly with additional user-provided context.'),
 });
 export type GenerateRiskDescriptionInput = z.infer<typeof GenerateRiskDescriptionInputSchema>;
 
@@ -31,11 +31,11 @@ const riskDescriptionPrompt = ai.definePrompt({
   name: 'riskDescriptionPrompt',
   input: {schema: GenerateRiskDescriptionInputSchema},
   output: {schema: GenerateRiskDescriptionOutputSchema},
-  prompt: `You are an expert risk analyst. Generate a detailed risk description based on the provided risk statement, technology, and control deficiencies. Provide a clear justification for the risk's relevance and explain how the deficiencies contribute to the risk.
+  prompt: `You are an expert risk analyst. Generate a detailed risk description based on the provided risk statement, technology, and control deficiencies. Provide a clear justification for the risk's relevance and explain how the deficiencies (and any extra context provided) contribute to the risk.
 
 Technology: {{{technology}}}
 Risk Statement: {{{riskStatement}}}
-Control Deficiencies: {{{controlDeficiencies}}}
+Control Deficiencies and Context: {{{controlDeficiencies}}}
 
 Risk Description:`, 
 });

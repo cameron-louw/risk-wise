@@ -13,4 +13,6 @@ export type RiskAssessment = {
   };
   controls?: string[];
   suggestedControls?: string[];
+  clarifyingQuestions?: string[];
+  questionAnswers?: string[];
 };

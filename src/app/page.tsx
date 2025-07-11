@@ -8,66 +8,49 @@ import { rateRisk } from '@/ai/flows/rate-risk';
 import { generateSuggestedControls } from '@/ai/flows/generate-suggested-controls';
 import { generateClarifyingQuestions } from '@/ai/flows/generate-clarifying-questions';
 import { RiskForm } from '@/components/risk-form';
-import { Questionnaire } from '@/components/questionnaire';
 import { RiskResults } from '@/components/risk-results';
 import { type RiskAssessment } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { Loader } from '@/components/loader';
 import { ThemeToggle } from '@/components/theme-toggle';
 
-type Step = 'form' | 'questions' | 'loading' | 'results';
+type Step = 'form' | 'loading' | 'results';
 
 export default function Home() {
   const [step, setStep] = useState<Step>('form');
-  const [formData, setFormData] = useState<{ technology: string; controlDeficiencies: string } | null>(null);
-  const [questions, setQuestions] = useState<string[]>([]);
-  const [answers, setAnswers] = useState<string[]>([]);
   const [results, setResults] = useState<RiskAssessment | null>(null);
   const { toast } = useToast();
 
   const handleFormSubmit = async (data: { technology: string; controlDeficiencies: string }) => {
     setStep('loading');
     setResults(null);
-    setFormData(data);
     try {
-      const { questions } = await generateClarifyingQuestions(data);
-      setQuestions(questions);
-      setAnswers(new Array(questions.length).fill(''));
-      setStep('questions');
-    } catch (e) {
-      console.error(e);
-      toast({
-        variant: "destructive",
-        title: "An error occurred",
-        description: "Failed to generate clarifying questions. Please try again.",
-      });
-      setStep('form');
-    }
-  };
+      const { technology, controlDeficiencies } = data;
 
-  const handleQuestionnaireSubmit = async (finalAnswers: string[]) => {
-    setStep('loading');
-    if (!formData) return;
+      // Generate everything in parallel for speed
+      const [
+        riskStatementResult,
+        clarifyingQuestionsResult
+      ] = await Promise.all([
+        generateRiskStatement({ technology, controlDeficiencies }),
+        generateClarifyingQuestions({ technology, controlDeficiencies })
+      ]);
 
-    try {
-      const { technology, controlDeficiencies } = formData;
-      const qna = questions.map((q, i) => `${q}\nAnswer: ${finalAnswers[i]}`).join('\n\n');
-      const enrichedDeficiencies = `${controlDeficiencies}\n\nAdditional Context from Q&A:\n${qna}`;
+      const { riskStatement } = riskStatementResult;
 
-      const { riskStatement } = await generateRiskStatement({ technology, controlDeficiencies: enrichedDeficiencies });
-      const { riskDescription } = await generateRiskDescription({ technology, riskStatement, controlDeficiencies: enrichedDeficiencies });
-      const { likelihood, impact } = await rateRisk({
-        technology,
-        deficiencies: enrichedDeficiencies,
-        riskStatement,
-        riskDescription,
-      });
-      const { suggestedControls } = await generateSuggestedControls({
-        technology,
-        riskStatement,
-        riskDescription,
-        controlDeficiencies: enrichedDeficiencies,
-      });
+      const [
+        riskDescriptionResult,
+        rateRiskResult,
+        suggestedControlsResult
+      ] = await Promise.all([
+         generateRiskDescription({ technology, riskStatement, controlDeficiencies }),
+         rateRisk({ technology, deficiencies: controlDeficiencies, riskStatement, riskDescription: "" }),
+         generateSuggestedControls({ technology, riskStatement, riskDescription: "", controlDeficiencies })
+      ]);
+      
+      const { riskDescription } = riskDescriptionResult;
+      const { likelihood, impact } = rateRiskResult;
+      const { suggestedControls } = suggestedControlsResult;
 
       setResults({
         technology,
@@ -78,14 +61,17 @@ export default function Home() {
         impact,
         controls: [],
         suggestedControls: suggestedControls || [],
+        clarifyingQuestions: clarifyingQuestionsResult.questions,
+        questionAnswers: new Array(clarifyingQuestionsResult.questions.length).fill('')
       });
+
       setStep('results');
     } catch (e) {
       console.error(e);
       toast({
         variant: "destructive",
         title: "An error occurred",
-        description: "Failed to generate risk assessment. Please try again.",
+        description: "Failed to generate initial risk assessment. Please try again.",
       });
       setStep('form');
     }
@@ -94,9 +80,6 @@ export default function Home() {
   const startOver = () => {
     setStep('form');
     setResults(null);
-    setFormData(null);
-    setQuestions([]);
-    setAnswers([]);
   }
 
   const isLoading = step === 'loading';
@@ -114,20 +97,9 @@ export default function Home() {
 
         <main className="space-y-8">
           {step === 'form' && <RiskForm onSubmit={handleFormSubmit} isLoading={isLoading} />}
-          {step === 'questions' && (
-            <Questionnaire
-              questions={questions}
-              answers={answers}
-              setAnswers={setAnswers}
-              onSubmit={handleQuestionnaireSubmit}
-              isLoading={isLoading}
-            />
-          )}
-          {isLoading && <Loader text={step === 'loading' && questions.length > 0 ? "Generating Full Assessment..." : "Generating Questions..."} />}
+          {isLoading && <Loader text="Generating Initial Assessment..." />}
           {step === 'results' && results && (
-            <>
-              <RiskResults data={results} onStartOver={startOver} />
-            </>
+            <RiskResults data={results} onStartOver={startOver} />
           )}
         </main>
       </div>

@@ -80,7 +80,7 @@ export function RiskForm({ onSubmit, isLoading }: RiskFormProps) {
             <div className="flex justify-end">
               <Button type="submit" disabled={isLoading || !form.formState.isValid} size="lg">
                 <BrainCircuit className="mr-2 h-5 w-5" />
-                {isLoading ? 'Starting...' : 'Start Assessment'}
+                {isLoading ? 'Generating...' : 'Generate Assessment'}
               </Button>
             </div>
           </form>

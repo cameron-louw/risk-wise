@@ -15,7 +15,7 @@ const GenerateSuggestedControlsInputSchema = z.object({
   technology: z.string().describe('The technology at risk.'),
   riskStatement: z.string().describe('The generated risk statement.'),
   riskDescription: z.string().describe('The detailed risk description.'),
-  controlDeficiencies: z.string().describe('The control deficiencies associated with the risk.'),
+  controlDeficiencies: z.string().describe('The control deficiencies associated with the risk, possibly with additional context from user answers.'),
 });
 export type GenerateSuggestedControlsInput = z.infer<typeof GenerateSuggestedControlsInputSchema>;
 
@@ -37,7 +37,7 @@ const suggestControlsPrompt = ai.definePrompt({
 Technology: {{{technology}}}
 Risk Statement: {{{riskStatement}}}
 Risk Description: {{{riskDescription}}}
-Control Deficiencies: {{{controlDeficiencies}}}
+Control Deficiencies and Context: {{{controlDeficiencies}}}
 
 Provide a list of concise, actionable control suggestions.
 `, 

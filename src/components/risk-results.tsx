@@ -6,10 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { RiskAssessment } from '@/types';
-import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw } from 'lucide-react';
+import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw, MessageCircleQuestion } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { rateRisk } from '@/ai/flows/rate-risk';
+import { ClarifyingQuestions } from './clarifying-questions';
+import { generateRiskDescription } from '@/ai/flows/generate-risk-description';
+import { generateRiskStatement } from '@/ai/flows/generate-risk-statement';
+import { generateSuggestedControls } from '@/ai/flows/generate-suggested-controls';
 
 interface RiskResultsProps {
   data: RiskAssessment;
@@ -104,15 +108,39 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
   const handleRecalculate = async () => {
     setIsRecalculating(true);
     try {
-      const { technology, controlDeficiencies, riskStatement, riskDescription, controls } = currentAssessment;
-      const result = await rateRisk({
-        technology,
-        deficiencies: controlDeficiencies,
+      const { technology, controlDeficiencies, controls, clarifyingQuestions, questionAnswers } = currentAssessment;
+      
+      const qna = (clarifyingQuestions || []).map((q, i) => `${q}\nAnswer: ${questionAnswers?.[i] || 'Not answered'}`).join('\n\n');
+      const hasAnswers = (questionAnswers || []).some(a => a.trim() !== '');
+      const enrichedDeficiencies = hasAnswers ? `${controlDeficiencies}\n\nAdditional Context from Q&A:\n${qna}` : controlDeficiencies;
+
+      const { riskStatement } = await generateRiskStatement({ technology, controlDeficiencies: enrichedDeficiencies });
+      const { riskDescription } = await generateRiskDescription({ technology, riskStatement, controlDeficiencies: enrichedDeficiencies });
+      
+      const [rateResult, controlsResult] = await Promise.all([
+        rateRisk({
+          technology,
+          deficiencies: enrichedDeficiencies,
+          riskStatement,
+          riskDescription,
+          controls,
+        }),
+        generateSuggestedControls({
+            technology,
+            riskStatement,
+            riskDescription,
+            controlDeficiencies: enrichedDeficiencies,
+        })
+      ]);
+
+      setCurrentAssessment({ 
+        ...currentAssessment,
         riskStatement,
         riskDescription,
-        controls,
+        likelihood: rateResult.likelihood, 
+        impact: rateResult.impact,
+        suggestedControls: controlsResult.suggestedControls
       });
-      setCurrentAssessment({ ...currentAssessment, likelihood: result.likelihood, impact: result.impact });
     } catch (e) {
       console.error(e);
       toast({
@@ -125,10 +153,11 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
     }
   };
 
-  const { likelihood, impact, controls, suggestedControls } = currentAssessment;
+  const { likelihood, impact, controls, suggestedControls, clarifyingQuestions, questionAnswers } = currentAssessment;
   const totalRating = (ratingValueMap[likelihood.rating] || 0) * (ratingValueMap[impact.rating] || 0) ;
   const hasControls = controls && controls.length > 0;
   const hasSuggestedControls = suggestedControls && suggestedControls.length > 0;
+  const hasClarifyingQuestions = clarifyingQuestions && clarifyingQuestions.length > 0;
 
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
@@ -294,12 +323,7 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             ) : (
               <p className="text-muted-foreground text-sm">No new controls have been added yet.</p>
             )}
-            <div className="flex justify-end pt-2">
-              <Button onClick={handleRecalculate} disabled={isRecalculating}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isRecalculating ? 'Recalculating...' : hasControls ? 'Recalculate with Controls' : 'Recalculate Assessment'}
-              </Button>
-            </div>
+            
           </div>
           {hasSuggestedControls && (
             <div className="space-y-3 pt-4">
@@ -324,6 +348,28 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
               </div>
             </div>
           )}
+
+          {hasClarifyingQuestions && (
+            <div className="space-y-3 pt-4">
+                <Separator />
+                 <ClarifyingQuestions 
+                    questions={clarifyingQuestions} 
+                    answers={questionAnswers || []}
+                    onAnswerChange={(index, answer) => {
+                        const newAnswers = [...(currentAssessment.questionAnswers || [])];
+                        newAnswers[index] = answer;
+                        setCurrentAssessment({...currentAssessment, questionAnswers: newAnswers});
+                    }}
+                />
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2">
+              <Button onClick={handleRecalculate} disabled={isRecalculating}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {isRecalculating ? 'Recalculating...' : 'Recalculate Assessment'}
+              </Button>
+            </div>
         </CardContent>
       </Card>
     </div>

@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const RateRiskInputSchema = z.object({
   technology: z.string().describe('The technology associated with the risk.'),
-  deficiencies: z.string().describe('The control deficiencies identified.'),
+  deficiencies: z.string().describe('The control deficiencies identified, possibly with additional context from user answers.'),
   riskStatement: z.string().describe('The generated risk statement.'),
   riskDescription: z.string().describe('The generated risk description.'),
   controls: z.array(z.string()).optional().describe('Implemented controls that mitigate the risk.'),
@@ -46,7 +46,7 @@ const rateRiskPrompt = ai.definePrompt({
 
 **Risk Context:**
 - **Technology:** {{{technology}}}
-- **Control Deficiencies:** {{{deficiencies}}}
+- **Control Deficiencies & Context:** {{{deficiencies}}}
 - **Risk Statement:** {{{riskStatement}}}
 - **Risk Description:** {{{riskDescription}}}
 
@@ -60,7 +60,7 @@ const rateRiskPrompt = ai.definePrompt({
 **Assessment Instructions:**
 
 1.  **Analyze Likelihood:**
-    -   Based on the deficiencies, determine the Threat Event Frequency (how often a threat agent will act) and Vulnerability (how easily the technology can be compromised).
+    -   Based on the deficiencies and any additional context, determine the Threat Event Frequency (how often a threat agent will act) and Vulnerability (how easily the technology can be compromised).
     -   If mitigating controls are present, evaluate how they reduce Threat Event Frequency or Vulnerability.
     -   Provide a **Likelihood Rating** on a scale of **Very Low, Low, Medium, High, Very High**.
     -   Provide a detailed **Justification** for your likelihood rating, explaining your reasoning based on FAIR principles (Threat Event Frequency, Vulnerability) and the effect of any controls.
