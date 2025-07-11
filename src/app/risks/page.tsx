@@ -56,7 +56,7 @@ export default function RiskListPage() {
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>Risk Register</CardTitle>
-                            <CardDescription>A list of all the risks you have saved.</CardDescription>
+                            <CardDescription>A list of all the risks you have saved. Click a row to view details.</CardDescription>
                         </div>
                         <Link href="/">
                             <Button>
@@ -82,7 +82,7 @@ export default function RiskListPage() {
                                 {risks.map((risk) => {
                                     const totalRating = (ratingValueMap[risk.likelihood.rating] || 0) * (ratingValueMap[risk.impact.rating] || 0);
                                     return (
-                                        <TableRow key={risk.id}>
+                                        <TableRow key={risk.id} onClick={() => viewRisk(risk.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{risk.technology}</TableCell>
                                             <TableCell>{risk.riskStatement}</TableCell>
                                             <TableCell className="text-center">
@@ -95,7 +95,7 @@ export default function RiskListPage() {
                                                 <Badge variant={getTotalRatingBadgeVariant(totalRating)}>{totalRating}</Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" onClick={() => viewRisk(risk.id)}>
+                                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); viewRisk(risk.id); }}>
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteRisk(risk.id); }}>
