@@ -5,4 +5,5 @@ export type RiskAssessment = {
   riskDescription: string;
   likelihood: string;
   impact: string;
+  controls?: string[];
 };

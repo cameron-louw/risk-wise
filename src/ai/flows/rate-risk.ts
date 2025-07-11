@@ -41,7 +41,12 @@ Technology: {{{technology}}}
 Deficiencies: {{{deficiencies}}}
 Risk Statement: {{{riskStatement}}}
 Risk Description: {{{riskDescription}}}
-{{#if controls}}Implemented Controls: {{{controls.join \", \"}}}{{/if}}
+{{#if controls}}
+Implemented Controls:
+{{#each controls}}
+- {{{this}}}
+{{/each}}
+{{/if}}
 
 Provide a likelihood rating (Low, Medium, High) and a justification for this rating based on a security risk framework.
 Provide an impact rating (Low, Medium, High) and a justification for this rating based on a security risk framework.
