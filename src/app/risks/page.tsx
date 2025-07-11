@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { type RiskAssessment } from '@/types';
-import { PlusCircle, Trash2, ArrowUpRight, ListChecks, ShieldCheck, Eye } from 'lucide-react';
+import { PlusCircle, Trash2, ListChecks, ShieldCheck, Eye } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const ratingValueMap: { [key: string]: number } = {
@@ -20,8 +20,11 @@ export default function RiskListPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const savedRisks = JSON.parse(localStorage.getItem('riskAssessments') || '[]');
-    setRisks(savedRisks);
+    // This check ensures localStorage is accessed only on the client side.
+    if (typeof window !== 'undefined') {
+        const savedRisks = JSON.parse(localStorage.getItem('riskAssessments') || '[]');
+        setRisks(savedRisks);
+    }
   }, []);
   
   const deleteRisk = (id: string) => {
@@ -30,10 +33,6 @@ export default function RiskListPage() {
     setRisks(updatedRisks);
   };
   
-  const viewRisk = (id: string) => {
-    router.push(`/risks/${id}`);
-  };
-
   const getTotalRatingBadgeVariant = (rating: number): 'destructive' | 'secondary' | 'outline' => {
     if (rating >= 16) return 'destructive';
     if (rating >= 6) return 'secondary';
@@ -82,7 +81,7 @@ export default function RiskListPage() {
                                 {risks.map((risk) => {
                                     const totalRating = (ratingValueMap[risk.likelihood.rating] || 0) * (ratingValueMap[risk.impact.rating] || 0);
                                     return (
-                                        <TableRow key={risk.id} onClick={() => viewRisk(risk.id)} className="cursor-pointer">
+                                        <TableRow key={risk.id} onClick={() => router.push(`/risks/${risk.id}`)} className="cursor-pointer">
                                             <TableCell className="font-medium">{risk.technology}</TableCell>
                                             <TableCell>{risk.riskStatement}</TableCell>
                                             <TableCell className="text-center">
@@ -95,9 +94,13 @@ export default function RiskListPage() {
                                                 <Badge variant={getTotalRatingBadgeVariant(totalRating)}>{totalRating}</Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); viewRisk(risk.id); }}>
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
+                                                <Link href={`/risks/${risk.id}`} passHref>
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <a onClick={(e) => e.stopPropagation()}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </a>
+                                                    </Button>
+                                                </Link>
                                                 <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteRisk(risk.id); }}>
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
