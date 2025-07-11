@@ -485,8 +485,8 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
         </Card>
 
         {hasClarifyingQuestions && (
-            <Card className="shadow-none border-dashed">
-                <AccordionItem value="clarifying-questions" className="border-0">
+            <AccordionItem value="clarifying-questions" className="border-0">
+                  <Card className="shadow-none border-dashed">
                      <CardHeader className="pb-2">
                         <AccordionTrigger className="p-0 hover:no-underline">
                              <CardTitle className="flex items-center gap-3">
@@ -511,8 +511,8 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
                             />
                         </CardContent>
                     </AccordionContent>
-                </AccordionItem>
-            </Card>
+                  </Card>
+            </AccordionItem>
         )}
       </Accordion>
 

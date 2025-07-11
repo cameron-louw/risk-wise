@@ -16,40 +16,29 @@ export function ClarifyingQuestions({ questions, answers, onAnswerChange }: Clar
   const form = useForm();
   
   return (
-    <Card className="shadow-none border-dashed">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-            <MessageCircleQuestion className="h-6 w-6 text-primary" />
-            <span>Refine Assessment</span>
-        </CardTitle>
-        <CardDescription>Answer these clarifying questions to provide more context and improve the accuracy of the risk assessment when you recalculate.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <FormProvider {...form}>
-          <form className="space-y-6">
-            {questions.map((question, index) => (
-              <FormField
-                key={index}
-                control={form.control}
-                name={`question_${index}`}
-                render={() => (
-                  <FormItem>
-                    <FormLabel>{`Question ${index + 1}: ${question}`}</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Your detailed answer here..."
-                        className="min-h-[100px]"
-                        value={answers[index]}
-                        onChange={(e) => onAnswerChange(index, e.target.value)}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            ))}
-          </form>
-        </FormProvider>
-      </CardContent>
-    </Card>
+    <FormProvider {...form}>
+      <form className="space-y-6">
+        {questions.map((question, index) => (
+          <FormField
+            key={index}
+            control={form.control}
+            name={`question_${index}`}
+            render={() => (
+              <FormItem>
+                <FormLabel>{`Question ${index + 1}: ${question}`}</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Your detailed answer here..."
+                    className="min-h-[100px]"
+                    value={answers[index]}
+                    onChange={(e) => onAnswerChange(index, e.target.value)}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        ))}
+      </form>
+    </FormProvider>
   );
 }
