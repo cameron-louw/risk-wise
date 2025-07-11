@@ -1,4 +1,5 @@
 export type RiskAssessment = {
+  id: string; // Unique identifier for each risk
   technology: string;
   controlDeficiencies: string;
   riskStatement: string;

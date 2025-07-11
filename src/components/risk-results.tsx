@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { RiskAssessment } from '@/types';
-import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw, MessageCircleQuestion, Lock, Shield, ServerCrash, ShieldCheck } from 'lucide-react';
+import { Download, FileWarning, ShieldAlert, ClipboardList, Info, Sparkles, X, PlusCircle, Lightbulb, RefreshCw, MessageCircleQuestion, Lock, Shield, ServerCrash, ShieldCheck, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { rateRisk } from '@/ai/flows/rate-risk';
@@ -30,6 +31,7 @@ const ratingValueMap: { [key: string]: number } = {
 
 export function RiskResults({ data, onStartOver }: RiskResultsProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [currentAssessment, setCurrentAssessment] = useState<RiskAssessment>(data);
   const [newControl, setNewControl] = useState('');
   const [isRecalculating, setIsRecalculating] = useState(false);
@@ -62,6 +64,26 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+  
+  const handleSaveRisk = () => {
+    try {
+        const savedRisks: RiskAssessment[] = JSON.parse(localStorage.getItem('riskAssessments') || '[]');
+        const updatedRisks = [...savedRisks.filter(r => r.id !== currentAssessment.id), currentAssessment];
+        localStorage.setItem('riskAssessments', JSON.stringify(updatedRisks));
+        toast({
+            title: "Risk Saved",
+            description: "Your risk assessment has been saved successfully.",
+        });
+        router.push('/risks');
+    } catch (e) {
+        console.error(e);
+        toast({
+            variant: "destructive",
+            title: "Failed to save risk",
+            description: "Could not save the risk to local storage.",
+        });
+    }
   };
 
   const getBadgeVariant = (level: string): 'destructive' | 'secondary' | 'outline' => {
@@ -413,6 +435,13 @@ export function RiskResults({ data, onStartOver }: RiskResultsProps) {
             </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-end pt-2">
+        <Button onClick={handleSaveRisk} size="lg">
+          <Save className="mr-2 h-4 w-4" />
+          Save Risk & View List
+        </Button>
+      </div>
     </div>
   );
 }

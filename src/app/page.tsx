@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, ListChecks } from 'lucide-react';
 import { generateRiskStatement } from '@/ai/flows/generate-risk-statement';
 import { generateRiskDescription } from '@/ai/flows/generate-risk-description';
 import { rateRisk } from '@/ai/flows/rate-risk';
@@ -13,6 +13,8 @@ import { type RiskAssessment } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { Loader } from '@/components/loader';
 import { ThemeToggle } from '@/components/theme-toggle';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 type Step = 'form' | 'loading' | 'results';
 
@@ -53,6 +55,7 @@ export default function Home() {
       const { suggestedControls } = suggestedControlsResult;
 
       setResults({
+        id: new Date().toISOString(), // Add a unique ID
         technology,
         controlDeficiencies,
         riskStatement,
@@ -87,7 +90,13 @@ export default function Home() {
 
   return (
     <div className="relative flex flex-col items-center min-h-screen bg-background p-4 sm:p-8">
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <Link href="/risks">
+            <Button variant="outline">
+                <ListChecks className="mr-2 h-4 w-4"/>
+                View Saved Risks
+            </Button>
+        </Link>
         <ThemeToggle />
       </div>
       <div className="w-full max-w-4xl mx-auto">
