@@ -1,0 +1,1 @@
+RiskWise is a dynamic, New Zealand-born app designed to tackle security risks head-on. Built for businesses, it streamlines identifying and managing digital and physical security threats, from data breaches to access vulnerabilities. With real-time risk analysis and AI-powered control suggestions, RiskWise empowers Kiwi organizations to stay secure, fast.
