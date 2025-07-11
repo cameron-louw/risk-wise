@@ -305,42 +305,44 @@ export function RiskResults({ initialData, onStartOver, onAssessmentUpdate, isSa
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex flex-col items-center justify-center w-full">
-            <div className="grid grid-cols-6 w-full text-center font-bold border-l border-t">
-              <div className="p-2 border-r border-b flex items-center justify-center -rotate-90">Likelihood</div>
-              {riskLevels.map((impactLevel) => (
-                <div key={impactLevel} className="p-2 border-r border-b flex items-center justify-center text-xs sm:text-sm">{impactLevel}</div>
+          <div className="flex items-center justify-center w-full">
+            <div className="flex-none flex items-center justify-center font-bold -rotate-90">Likelihood</div>
+            <div className="flex-grow">
+              <div className="grid grid-cols-5 w-full text-center font-bold border-t">
+                {riskLevels.map((impactLevel) => (
+                  <div key={impactLevel} className="p-2 border-r border-t border-b flex items-center justify-center text-xs sm:text-sm">{impactLevel}</div>
+                ))}
+              </div>
+              {riskLevelsReversed.map((likelihoodLevel) => (
+                <div key={likelihoodLevel} className="grid grid-cols-6 w-full text-center border-l">
+                  <div className="p-2 border-r border-b flex items-center justify-center font-bold text-xs sm:text-sm">
+                    {likelihoodLevel}
+                  </div>
+                  {riskLevels.map((impactLevel) => {
+                    const cellRating = (ratingValueMap[likelihoodLevel] || 0) * (ratingValueMap[impactLevel] || 0);
+                    const isResidual = likelihoodLevel === likelihood.rating && impactLevel === impact.rating;
+                    const isInherent = showInherentRisk && initialLikelihood && initialImpact && likelihoodLevel === initialLikelihood.rating && impactLevel === initialImpact.rating;
+                    
+                    return (
+                      <div
+                        key={`${likelihoodLevel}-${impactLevel}`}
+                        className={`relative p-4 border-r border-b flex items-center justify-center text-sm font-bold ${getCellColor(cellRating)}`}
+                      >
+                        {cellRating || '-'}
+                        {isInherent && (
+                            <div className="absolute inset-1 ring-2 ring-muted-foreground/50 rounded-full" title={`Inherent Risk (${initialLikelihood?.rating} / ${initialImpact?.rating})`}></div>
+                        )}
+                        {isResidual && (
+                            <div className="absolute inset-1 ring-2 ring-primary rounded-full" title={`Residual Risk (${likelihood.rating} / ${impact.rating})`}></div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               ))}
             </div>
-            {riskLevelsReversed.map((likelihoodLevel) => (
-              <div key={likelihoodLevel} className="grid grid-cols-6 w-full text-center border-l border-b">
-                <div className="p-2 border-r flex items-center justify-center font-bold text-xs sm:text-sm">
-                  {likelihoodLevel}
-                </div>
-                {riskLevels.map((impactLevel) => {
-                  const cellRating = (ratingValueMap[likelihoodLevel] || 0) * (ratingValueMap[impactLevel] || 0);
-                  const isResidual = likelihoodLevel === likelihood.rating && impactLevel === impact.rating;
-                  const isInherent = showInherentRisk && initialLikelihood && initialImpact && likelihoodLevel === initialLikelihood.rating && impactLevel === initialImpact.rating;
-                  
-                  return (
-                    <div
-                      key={`${likelihoodLevel}-${impactLevel}`}
-                      className={`relative p-4 border-r flex items-center justify-center text-sm font-bold ${getCellColor(cellRating)}`}
-                    >
-                      {cellRating || '-'}
-                      {isInherent && (
-                          <div className="absolute inset-1 ring-2 ring-muted-foreground/50 rounded-full" title={`Inherent Risk (${initialLikelihood?.rating} / ${initialImpact?.rating})`}></div>
-                      )}
-                      {isResidual && (
-                          <div className="absolute inset-1 ring-2 ring-primary rounded-full" title={`Residual Risk (${likelihood.rating} / ${impact.rating})`}></div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-             <div className="w-full text-center font-bold mt-2">Impact</div>
           </div>
+          <div className="w-full text-center font-bold mt-2">Impact</div>
 
           <Separator />
 
