@@ -20,14 +20,16 @@ const RateRiskInputSchema = z.object({
 });
 export type RateRiskInput = z.infer<typeof RateRiskInputSchema>;
 
+const ratingScale = z.enum(['Very Low', 'Low', 'Medium', 'High', 'Very High']);
+
 const RateRiskOutputSchema = z.object({
   likelihood: z.object({
-    rating: z.string().describe('The likelihood of the risk occurring (e.g., Low, Medium, High).'),
-    justification: z.string().describe('A detailed justification for the likelihood rating.'),
+    rating: ratingScale.describe('The likelihood of the risk occurring (Very Low, Low, Medium, High, Very High).'),
+    justification: z.string().describe('A detailed justification for the likelihood rating based on the FAIR framework.'),
   }),
   impact: z.object({
-    rating: z.string().describe('The impact if the risk occurs (e.g., Low, Medium, High).'),
-    justification: z.string().describe('A detailed justification for the impact rating.'),
+    rating: ratingScale.describe('The impact if the risk occurs (Very Low, Low, Medium, High, Very High).'),
+    justification: z.string().describe('A detailed justification for the impact rating based on the FAIR framework.'),
   }),
 });
 export type RateRiskOutput = z.infer<typeof RateRiskOutputSchema>
@@ -40,23 +42,37 @@ const rateRiskPrompt = ai.definePrompt({
   name: 'rateRiskPrompt',
   input: {schema: RateRiskInputSchema},
   output: {schema: RateRiskOutputSchema},
-  prompt: `Based on the following technology, control deficiencies, risk statement, and risk description, assess the likelihood and impact of the risk.
-Technology: {{{technology}}}
-Deficiencies: {{{deficiencies}}}
-Risk Statement: {{{riskStatement}}}
-Risk Description: {{{riskDescription}}}
+  prompt: `You are a Senior Risk Analyst using the Factor Analysis of Information Risk (FAIR) framework. Your task is to assess the likelihood and impact of a described risk scenario.
+
+**Risk Context:**
+- **Technology:** {{{technology}}}
+- **Control Deficiencies:** {{{deficiencies}}}
+- **Risk Statement:** {{{riskStatement}}}
+- **Risk Description:** {{{riskDescription}}}
+
 {{#if controls}}
-Implemented Controls:
+**Mitigating Controls Implemented:**
 {{#each controls}}
 - {{{this}}}
 {{/each}}
 {{/if}}
 
-Provide a likelihood rating (Low, Medium, High) and a detailed justification for this rating based on a security risk framework. Explain WHY the rating is what it is.
-Provide an impact rating (Low, Medium, High) and a detailed justification for this rating based on a security risk framework. Explain WHY the rating is what it is.
-Ensure that the ratings are based on the severity and probability implied by the deficiencies and risk descriptions.
-If controls are implemented, explain how they affect the likelihood and/or impact.
-Use a security risk framework (e.g., FAIR, NIST SP 800-30) to inform your justifications.
+**Assessment Instructions:**
+
+1.  **Analyze Likelihood:**
+    -   Based on the deficiencies, determine the Threat Event Frequency (how often a threat agent will act) and Vulnerability (how easily the technology can be compromised).
+    -   If mitigating controls are present, evaluate how they reduce Threat Event Frequency or Vulnerability.
+    -   Provide a **Likelihood Rating** on a scale of **Very Low, Low, Medium, High, Very High**.
+    -   Provide a detailed **Justification** for your likelihood rating, explaining your reasoning based on FAIR principles (Threat Event Frequency, Vulnerability) and the effect of any controls.
+
+2.  **Analyze Impact:**
+    -   Based on the risk description, estimate the potential magnitude of loss (e.g., financial, reputational, legal).
+    -   Consider the different forms of loss (Productivity, Response, Replacement, Fines and Judgements, Competitive Advantage, Reputation).
+    -   If mitigating controls are present, evaluate how they reduce the magnitude of loss.
+    -   Provide an **Impact Rating** on a scale of **Very Low, Low, Medium, High, Very High**.
+    -   Provide a detailed **Justification** for your impact rating, explaining your reasoning based on FAIR principles (Magnitude of Loss) and the effect of any controls.
+
+Your response must be in the specified JSON format.
 `,
 });
 

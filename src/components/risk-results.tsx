@@ -28,9 +28,6 @@ export function RiskResults({ data }: RiskResultsProps) {
   const [newControl, setNewControl] = useState('');
   const [isRecalculating, setIsRecalculating] = useState(false);
   
-  // Separate state for staged controls
-  const [stagedControls, setStagedControls] = useState<string[]>(data.controls || []);
-
   const handleExport = () => {
     const { technology, controlDeficiencies, riskStatement, riskDescription, likelihood, impact } = currentAssessment;
     
@@ -63,47 +60,49 @@ export function RiskResults({ data }: RiskResultsProps) {
 
   const getBadgeVariant = (level: string): 'destructive' | 'secondary' | 'outline' => {
     const lowerLevel = (level || '').toLowerCase();
-    if (lowerLevel.includes('high')) return 'destructive';
+    if (lowerLevel.includes('very high') || lowerLevel.includes('high')) return 'destructive';
     if (lowerLevel.includes('medium')) return 'secondary';
-    if (lowerLevel.includes('low')) return 'outline';
     return 'outline';
   };
   
   const getCellColor = (rating: number): string => {
     if (rating >= 16) return 'bg-red-500/50';
-    if (rating >= 10) return 'bg-red-400/50';
-    if (rating >= 6) return 'bg-orange-300/50';
-    if (rating >= 3) return 'bg-yellow-300/50';
-    return 'outline';
+    if (rating >= 10) return 'bg-yellow-500/50';
+    if (rating >= 6) return 'bg-yellow-400/50';
+    if (rating >= 3) return 'bg-green-400/50';
+    return 'bg-green-500/50';
   };
 
   const getTotalRatingBadgeVariant = (rating: number): 'destructive' | 'secondary' | 'outline' => {
-    if (rating >= 15) return 'destructive';
-    if (rating >= 5) return 'secondary';
+    if (rating >= 16) return 'destructive';
+    if (rating >= 6) return 'secondary';
     return 'outline';
   };
   
   const handleAddControl = () => {
     if (newControl.trim() === '') return;
-    setStagedControls([...stagedControls, newControl.trim()]);
+    const updatedControls = [...(currentAssessment.controls || []), newControl.trim()];
+    setCurrentAssessment({ ...currentAssessment, controls: updatedControls });
     setNewControl('');
   };
 
   const handleRemoveControl = (index: number) => {
-    setStagedControls(stagedControls.filter((_, i) => i !== index));
+    const updatedControls = (currentAssessment.controls || []).filter((_, i) => i !== index);
+    setCurrentAssessment({ ...currentAssessment, controls: updatedControls });
   };
   
   const handleRecalculate = async () => {
     setIsRecalculating(true);
     try {
+      const { technology, controlDeficiencies, riskStatement, riskDescription, controls } = currentAssessment;
       const result = await rateRisk({
-        technology: currentAssessment.technology,
-        deficiencies: currentAssessment.controlDeficiencies,
-        riskStatement: currentAssessment.riskStatement,
-        riskDescription: currentAssessment.riskDescription,
-        controls: stagedControls,
+        technology,
+        deficiencies: controlDeficiencies,
+        riskStatement,
+        riskDescription,
+        controls,
       });
-      setCurrentAssessment({ ...currentAssessment, ...result, controls: stagedControls });
+      setCurrentAssessment({ ...currentAssessment, ...result });
     } catch (e) {
       console.error(e);
       toast({
@@ -233,7 +232,7 @@ export function RiskResults({ data }: RiskResultsProps) {
             </Badge>
           </div>
           <div className="text-center text-sm text-muted-foreground">
-            Risk ratings explained: 1-4 (Very Low), 5-9 (Low), 10-15 (Medium), 16-20 (High), 21-25 (Very High).
+            Risk ratings explained: 1-5 (Low), 6-15 (Medium), 16-25 (High).
           </div>
         </CardContent>
       </Card>
@@ -259,11 +258,11 @@ export function RiskResults({ data }: RiskResultsProps) {
               <PlusCircle className="h-4 w-4" />
             </Button>
           </div>
-          {stagedControls && stagedControls.length > 0 ? (
+          {(currentAssessment.controls && currentAssessment.controls.length > 0) ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Controls to be applied:</p>
+              <p className="text-sm font-medium">Applied Mitigating Controls:</p>
               <ul className="space-y-2">
-                {stagedControls.map((control, index) => (
+                {currentAssessment.controls.map((control, index) => (
                   <li key={index} className="flex items-center justify-between bg-secondary p-2 rounded-md">
                     <span>{control}</span>
                     <Button variant="ghost" size="icon" onClick={() => handleRemoveControl(index)}>
